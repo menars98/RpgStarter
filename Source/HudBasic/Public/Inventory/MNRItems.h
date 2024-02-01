@@ -28,7 +28,7 @@ public:
 	UPROPERTY(Transient)
 	class UWorld* World;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Items")
+	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Items")
 	int32 StackCount;
 
 	/*The text for using the item.(Equip,eat etc.)*/
@@ -59,12 +59,18 @@ public:
 	UPROPERTY()
 	class UMNRInventoryComponent* OwningInventory;
 
-	virtual void Use(AMNRHeroCharacter* Character);
-
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;;
+	//UPROPERTY()
+	//AActor* InFocus;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnUse(AMNRHeroCharacter* Character);
+
+	virtual void Use(AActor* Instigator);
+
+	UFUNCTION(Server, Reliable)
+	virtual void ServerUse(AActor* Instigator);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;;
 
 	virtual class UWorld* GetWorld() const override { return World; };
 

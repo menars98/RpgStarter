@@ -6,6 +6,8 @@
 #include "Character/MNRHeroCharacter.h"
 #include "Engine/ActorChannel.h"
 #include "Net/UnrealNetwork.h"
+#include <Inventory/MNRInventoryComponent.h>
+
 
 #define LOCTEXT_NAMESPACE "InteractableActors"
 
@@ -27,6 +29,8 @@ void AMNRItemActor::BeginPlay()
 	
 }
 
+
+
 /*bool AMNRItemActor::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
 {
 	bool bWroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
@@ -40,17 +44,10 @@ void AMNRItemActor::BeginPlay()
 	return bWroteSomething;	
 }*/
 
-/*void AMNRItemActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	// Replicating these properties is optional, but likely useful.
-	DOREPLIFETIME(AMNRItemActor, Item);
-}*/
 
 void AMNRItemActor::Interact_Implementation(APawn* InstigatorPawn)
 {
-	if(!ensure(InstigatorPawn))
+	if (!ensure(InstigatorPawn))
 	{
 		return;
 	}
@@ -58,10 +55,17 @@ void AMNRItemActor::Interact_Implementation(APawn* InstigatorPawn)
 	AMNRHeroCharacter* Character = Cast<AMNRHeroCharacter>(InstigatorPawn);
 	if (Character)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Successful your character is:%s"), *GetNameSafe(Character));
-		Character->AddItemToInventoryWidget(Item.GetDefaultObject());
-		Destroy();
+		//UE_LOG(LogTemp, Error, TEXT("Successful your character is:%s"), *GetNameSafe(Character));
+		UMNRInventoryComponent* InvtComp = Character->GetInventoryComponent();
+		if (InvtComp)
+		{
+			if (Character->HasAuthority())
+			{
+				InvtComp->ServerAddItem(Item.GetDefaultObject());
+			}
+			//InvtComp->AddItem(Item.GetDefaultObject());
+		}
 	}
-	
+	Destroy();
 }
 

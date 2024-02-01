@@ -21,7 +21,7 @@ protected:
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Abilities")
 	TSubclassOf<class UGameplayEffect> DefaultAttributes;
 
-	virtual void Use(AMNRHeroCharacter* Character) override;
+	virtual void Use(AActor* Instigator) override;
 
-	
+	virtual void ServerUse_Implementation(AActor* Instigator) override;
 };

@@ -14,7 +14,18 @@ UMNRAssetManager& UMNRAssetManager::Get()
 	check(GEngine);
 
 	UMNRAssetManager* MyAssetManager = Cast<UMNRAssetManager>(GEngine->AssetManager);
-	return *MyAssetManager;
+
+	if (MyAssetManager)
+	{
+		return *MyAssetManager;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Fatal, TEXT("Invalid AssetManager in DefaultEngine.ini, must be GDAssetManager!"));
+		return *NewObject<UMNRAssetManager>();	 // never calls this
+	}
+
+	
 }
 
 void UMNRAssetManager::StartInitialLoading()

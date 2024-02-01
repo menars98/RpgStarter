@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Interaction/MNRGameplayInterface.h"
 #include "UI/MNRWorldUserWidget.h"
+#include "DrawDebugHelpers.h"
 
 static TAutoConsoleVariable<bool> CVarDebugDrawInteraction(TEXT("mnr.InteractionDebugDraw"), false, TEXT("Enable Debug Lines for Interact Component."), ECVF_Cheat);
 
@@ -25,6 +26,7 @@ void UMNRInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 
 	APawn* MyPawn = Cast<APawn>(GetOwner());
 
+	//Is Locally Controlled, then run this function.
 	if (MyPawn->IsLocallyControlled())
 	{
 		FindBestInteractable();

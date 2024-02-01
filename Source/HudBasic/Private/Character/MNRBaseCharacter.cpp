@@ -23,6 +23,8 @@ AMNRBaseCharacter::AMNRBaseCharacter(const class FObjectInitializer& ObjectIniti
 
 	DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
 	EffectRemoveOnDeathTag = FGameplayTag::RequestGameplayTag(FName("Effect.RemoveOnDeath"));
+
+	SetReplicates(true);
 }
 
 UAbilitySystemComponent* AMNRBaseCharacter::GetAbilitySystemComponent() const

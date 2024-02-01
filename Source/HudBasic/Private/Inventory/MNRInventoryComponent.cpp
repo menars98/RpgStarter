@@ -71,11 +71,21 @@ bool UMNRInventoryComponent::RemoveItem(UMNRItems* Item)
 	}
 	if(Item && Item->StackCount > 0)
 	{
-		Item->StackCount--;
+		--Item->StackCount;
 		OnInventoryUpdated.Broadcast();
 		return true;
 	}
 	return false;
+}
+
+void UMNRInventoryComponent::ServerAddItem_Implementation(UMNRItems* Item)
+{
+	AddItem(Item);
+}
+
+void UMNRInventoryComponent::ServerRemoveItem_Implementation(UMNRItems* Item)
+{
+	RemoveItem(Item);
 }
 
 void UMNRInventoryComponent::OnAddItem_Implementation(UMNRItems* Item)
@@ -126,15 +136,3 @@ void UMNRInventoryComponent::OnRemoveItem_Implementation(UMNRItems* Item)
 		OnInventoryUpdated.Broadcast();
 	}
 }
-
-/*void UMNRInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	DOREPLIFETIME(UMNRInventoryComponent, Items);
-}*/
-
-/*bool UMNRInventoryComponent::ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags)
-{
-	return Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
-}*/

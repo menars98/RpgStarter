@@ -95,6 +95,8 @@ protected:
 
 public:
 
+	virtual class UMNRInventoryComponent* GetInventoryComponent() const;
+
 	// Creates and initializes the floating status bar for heroes.
 	// Safe to call many times because it checks to make sure it only executes once.
 	UFUNCTION()
@@ -102,6 +104,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Items")
 	void UseItem(class UMNRItems* Item);
+
+	UFUNCTION(Server, Reliable)
+	virtual void ServerUseItem(class UMNRItems* Item);
 
 	// Client only
 	virtual void OnRep_PlayerState() override;
@@ -120,6 +125,6 @@ public:
 
 	void PrimaryInteract();
 
-	UFUNCTION(BlueprintImplementableEvent, Category = "MNR")
-	void AddItemToInventoryWidget(UMNRItems* Item);
+	//UFUNCTION(BlueprintImplementableEvent, Category = "MNR")
+	//void AddItemToInventoryWidget(UMNRItems* Item);
 };

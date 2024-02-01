@@ -18,7 +18,6 @@ class HUDBASIC_API UMNRAbilitySystemComponent : public UAbilitySystemComponent
 	GENERATED_BODY()
 
 public:
-
 	bool bCharacterAbilitiesGiven = false;
 	bool bStartupEffectsApplied = false;
 

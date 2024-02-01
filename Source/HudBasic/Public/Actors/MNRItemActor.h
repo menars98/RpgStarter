@@ -27,15 +27,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Mesh")
 	UStaticMeshComponent* MeshComponent;
 
-	UPROPERTY(Replicated,EditDefaultsOnly, Category = "Item")
+	UPROPERTY(EditDefaultsOnly, Category = "Item")
 	TSubclassOf<UMNRItems> Item;
+
 
 public:
 
-	/*virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
-
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;*/
+	/*virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;*/
 
 	virtual void Interact_Implementation(APawn* InstigatorPawn) override;
+
 
 };

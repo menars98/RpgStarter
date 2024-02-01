@@ -24,6 +24,12 @@ public:
 	bool AddItem(class UMNRItems* Item);
 	bool RemoveItem(class UMNRItems* Item);
 
+	UFUNCTION(Server, Reliable)
+	void ServerAddItem(class UMNRItems* Item);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRemoveItem(class UMNRItems* Item);
+
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void OnAddItem(UMNRItems* Item);
 
@@ -42,7 +48,6 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	TArray<class UMNRItems*> Items;
 
-	/*virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;*/
+	//virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 };

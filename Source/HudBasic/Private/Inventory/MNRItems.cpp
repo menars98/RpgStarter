@@ -16,11 +16,16 @@ UMNRItems::UMNRItems()
 	ItemClass = StaticClass();
 }
 
-void UMNRItems::Use(AMNRHeroCharacter* Character)
+void UMNRItems::ServerUse_Implementation(AActor* Instigator)
 {
-
+	//logic
+	
 }
 
+void UMNRItems::Use(AActor* Instigator)
+{
+	
+}
 
 auto UMNRItems::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const -> void
 {

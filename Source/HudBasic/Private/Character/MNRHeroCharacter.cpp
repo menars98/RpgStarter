@@ -37,6 +37,8 @@ AMNRHeroCharacter::AMNRHeroCharacter(const class FObjectInitializer& ObjectIniti
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 
+	PrimaryActorTick.bCanEverTick = false;
+
 	// Makes sure that the animations play on the Server so that we can use bone and socket transforms
 	// to do things like spawning projectiles and other FX.
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
@@ -58,6 +60,7 @@ AMNRHeroCharacter::AMNRHeroCharacter(const class FObjectInitializer& ObjectIniti
 
 	InventoryComponent = CreateDefaultSubobject<UMNRInventoryComponent>("Inventory");
 	InventoryComponent->Capaticy = 20;
+	InventoryComponent->SetIsReplicated(true);
 
 	InteractionComp = CreateDefaultSubobject<UMNRInteractionComponent>("InteractionComp");
 }
@@ -213,6 +216,11 @@ void AMNRHeroCharacter::PrimaryInteract()
 	}
 }
 
+UMNRInventoryComponent* AMNRHeroCharacter::GetInventoryComponent() const
+{
+	return InventoryComponent;
+}
+
 void AMNRHeroCharacter::InitializeFloatingStatusBar()
 {
 	// Only create once
@@ -244,9 +252,14 @@ void AMNRHeroCharacter::UseItem(UMNRItems* Item)
 {
 	if(Item)
 	{
+		ServerUseItem(Item);
+	}
+}
+
+void AMNRHeroCharacter::ServerUseItem_Implementation(UMNRItems* Item)
+{
 		Item->Use(this);
 		Item->OnUse(this);
-	}
 }
 
 void AMNRHeroCharacter::OnRep_PlayerState()
