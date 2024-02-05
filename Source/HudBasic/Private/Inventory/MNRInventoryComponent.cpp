@@ -21,12 +21,12 @@ void UMNRInventoryComponent::BeginPlay()
 
 	for(auto& Item : DefaultItems)
 	{
-		AddItem(Item);
+		AddItem(Item, this->GetOwner());
 	}
 	
 }
 
-bool UMNRInventoryComponent::AddItem(UMNRItems* Item)
+bool UMNRInventoryComponent::AddItem(UMNRItems* Item, AActor* OwningActor)
 {
 	if(Items.Num() >= Capaticy || !Item)
 	{
@@ -49,16 +49,16 @@ bool UMNRInventoryComponent::AddItem(UMNRItems* Item)
 		Item->World = GetWorld();
 		Items.Add(Item);
 		//Update UI
-		OnInventoryUpdated.Broadcast();
+		OnInventoryUpdated.Broadcast(OwningActor);
 	}
 	else
 	{
-		OnInventoryUpdated.Broadcast();
+		OnInventoryUpdated.Broadcast(OwningActor);
 	}
 	return true;
 }
 
-bool UMNRInventoryComponent::RemoveItem(UMNRItems* Item)
+bool UMNRInventoryComponent::RemoveItem(UMNRItems* Item, AActor* OwningActor)
 {
 	if(Item->StackCount <1)
 	{
@@ -66,29 +66,39 @@ bool UMNRInventoryComponent::RemoveItem(UMNRItems* Item)
 		Item->World = nullptr;
 		Items.RemoveSingle(Item);
 		//Update UI
-		OnInventoryUpdated.Broadcast();
+		OnInventoryUpdated.Broadcast(OwningActor);
 		return true;
 	}
 	if(Item && Item->StackCount > 0)
 	{
 		--Item->StackCount;
-		OnInventoryUpdated.Broadcast();
+		OnInventoryUpdated.Broadcast(OwningActor);
 		return true;
 	}
 	return false;
 }
 
-void UMNRInventoryComponent::ServerAddItem_Implementation(UMNRItems* Item)
+void UMNRInventoryComponent::ClientAddItem_Implementation(UMNRItems* Item, AActor* OwningActor)
 {
-	AddItem(Item);
+	AddItem(Item, OwningActor);
 }
 
-void UMNRInventoryComponent::ServerRemoveItem_Implementation(UMNRItems* Item)
+void UMNRInventoryComponent::ClientRemoveItem_Implementation(UMNRItems* Item, AActor* OwningActor)
 {
-	RemoveItem(Item);
+	RemoveItem(Item, OwningActor);
 }
 
-void UMNRInventoryComponent::OnAddItem_Implementation(UMNRItems* Item)
+void UMNRInventoryComponent::ServerAddItem_Implementation(UMNRItems* Item, AActor* OwningActor)
+{
+	AddItem(Item, OwningActor);
+}
+
+void UMNRInventoryComponent::ServerRemoveItem_Implementation(UMNRItems* Item, AActor* OwningActor)
+{
+	RemoveItem(Item, OwningActor);
+}
+
+void UMNRInventoryComponent::OnAddItem_Implementation(UMNRItems* Item, AActor* OwningActor)
 {
 	if (Items.Num() >= Capaticy || !Item)
 	{
@@ -112,15 +122,15 @@ void UMNRInventoryComponent::OnAddItem_Implementation(UMNRItems* Item)
 		Item->World = GetWorld();
 		Items.Add(Item);
 		//Update UI
-		OnInventoryUpdated.Broadcast();
+		OnInventoryUpdated.Broadcast(OwningActor);
 	}
 	else
 	{
-		OnInventoryUpdated.Broadcast();
+		OnInventoryUpdated.Broadcast(OwningActor);
 	}
 }
 
-void UMNRInventoryComponent::OnRemoveItem_Implementation(UMNRItems* Item)
+void UMNRInventoryComponent::OnRemoveItem_Implementation(UMNRItems* Item, AActor* OwningActor)
 {
 	if (Item->StackCount < 1)
 	{
@@ -128,11 +138,21 @@ void UMNRInventoryComponent::OnRemoveItem_Implementation(UMNRItems* Item)
 		Item->World = nullptr;
 		Items.RemoveSingle(Item);
 		//Update UI
-		OnInventoryUpdated.Broadcast();
+		OnInventoryUpdated.Broadcast(OwningActor);
 	}
 	if (Item && Item->StackCount > 0)
 	{
 		Item->StackCount--;
-		OnInventoryUpdated.Broadcast();
+		OnInventoryUpdated.Broadcast(OwningActor);
 	}
+}
+
+void UMNRInventoryComponent::MulticastAddItem_Implementation(UMNRItems* Item, AActor* OwningActor)
+{
+	AddItem(Item, OwningActor);
+}
+
+void UMNRInventoryComponent::MulticastRemoveItem_Implementation(UMNRItems* Item, AActor* OwningActor)
+{
+	RemoveItem(Item, OwningActor);
 }

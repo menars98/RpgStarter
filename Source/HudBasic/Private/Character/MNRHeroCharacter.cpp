@@ -250,16 +250,19 @@ void AMNRHeroCharacter::InitializeFloatingStatusBar()
 
 void AMNRHeroCharacter::UseItem(UMNRItems* Item)
 {
-	if(Item)
-	{
-		ServerUseItem(Item);
-	}
+		MulticastUseItem(Item);
 }
 
 void AMNRHeroCharacter::ServerUseItem_Implementation(UMNRItems* Item)
 {
-		Item->Use(this);
-		Item->OnUse(this);
+	Item->Use(Item->GetOwningActor());
+	Item->OnUse(this);
+}
+
+void AMNRHeroCharacter::MulticastUseItem_Implementation(UMNRItems* Item)
+{
+	Item->Use(Item->GetOwningActor());
+	Item->OnUse(this);
 }
 
 void AMNRHeroCharacter::OnRep_PlayerState()

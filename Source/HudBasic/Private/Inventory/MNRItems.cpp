@@ -16,25 +16,28 @@ UMNRItems::UMNRItems()
 	ItemClass = StaticClass();
 }
 
-void UMNRItems::ServerUse_Implementation(AActor* Instigator)
+
+
+void UMNRItems::OnRep_ItemUsed()
 {
-	//logic
-	
 }
 
 void UMNRItems::Use(AActor* Instigator)
 {
-	
+}
+
+void UMNRItems::ServerUse_Implementation(AActor* Instigator)
+{
+}
+
+void UMNRItems::ClientUse_Implementation(AActor* Instigator)
+{
 }
 
 auto UMNRItems::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const -> void
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	if (const UBlueprintGeneratedClass* BPClass = Cast<UBlueprintGeneratedClass>(GetClass()))
-	{
-		BPClass->GetLifetimeBlueprintReplicationList(OutLifetimeProps);
-	}
 }
 
 

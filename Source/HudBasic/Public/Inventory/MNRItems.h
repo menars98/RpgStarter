@@ -22,7 +22,7 @@ public:
 
 	UMNRItems();
 
-	UPROPERTY(Replicated, EditDefaultsOnly, BlueprintReadWrite, Category = "Items")
+	UPROPERTY(ReplicatedUsing = "OnRep_ItemUsed", EditDefaultsOnly, BlueprintReadWrite, Category = "Items")
 	TSubclassOf<UMNRItems> ItemClass;
 
 	UPROPERTY(Transient)
@@ -62,6 +62,9 @@ public:
 	//UPROPERTY()
 	//AActor* InFocus;
 
+	UFUNCTION()
+	virtual void OnRep_ItemUsed();
+
 	UFUNCTION(BlueprintImplementableEvent)
 	void OnUse(AMNRHeroCharacter* Character);
 
@@ -70,6 +73,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	virtual void ServerUse(AActor* Instigator);
 
+	UFUNCTION(Client, Reliable)
+	virtual void ClientUse(AActor* Instigator);
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;;
 
 	virtual class UWorld* GetWorld() const override { return World; };
@@ -77,7 +83,7 @@ public:
 	virtual bool IsSupportedForNetworking() const override
 	{
 		return true;
-	}
+	}	
 
 public:
 	UFUNCTION(BlueprintPure, Category = "Items")

@@ -24,4 +24,8 @@ protected:
 	virtual void Use(AActor* Instigator) override;
 
 	virtual void ServerUse_Implementation(AActor* Instigator) override;
+
+	virtual void ClientUse_Implementation(AActor* Instigator) override;
+
+	virtual void OnRep_ItemUsed();
 };

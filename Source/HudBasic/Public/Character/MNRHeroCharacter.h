@@ -105,8 +105,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Items")
 	void UseItem(class UMNRItems* Item);
 
-	UFUNCTION(Server, Reliable)
-	virtual void ServerUseItem(class UMNRItems* Item);
+	UFUNCTION(Server, Reliable, BlueprintCallable)
+	void ServerUseItem(class UMNRItems* Item);
+
+	UFUNCTION(NetMulticast, Reliable, BlueprintCallable)
+	void MulticastUseItem(class UMNRItems* Item);
 
 	// Client only
 	virtual void OnRep_PlayerState() override;

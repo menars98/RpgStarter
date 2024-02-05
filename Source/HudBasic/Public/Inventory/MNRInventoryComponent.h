@@ -8,7 +8,7 @@
 
 struct FItemData;
 /*Blueprints will bind to this to update UI*/
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryUpdated);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryUpdated, AActor*, OwningActor);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class HUDBASIC_API UMNRInventoryComponent : public UActorComponent
@@ -21,20 +21,33 @@ public:
 
 	virtual void BeginPlay() override;
 
-	bool AddItem(class UMNRItems* Item);
-	bool RemoveItem(class UMNRItems* Item);
+	bool AddItem(class UMNRItems* Item, AActor* OwningActor);
+	bool RemoveItem(class UMNRItems* Item, AActor* OwningActor);
+
+	//@TODO Fix this functions all of them doing same thing
+	UFUNCTION(Server, Reliable)
+	void ServerAddItem(class UMNRItems* Item, AActor* OwningActor);
 
 	UFUNCTION(Server, Reliable)
-	void ServerAddItem(class UMNRItems* Item);
+	void ServerRemoveItem(class UMNRItems* Item, AActor* OwningActor);
 
-	UFUNCTION(Server, Reliable)
-	void ServerRemoveItem(class UMNRItems* Item);
+	UFUNCTION(Client, Reliable)
+	void ClientAddItem(class UMNRItems* Item, AActor* OwningActor);
+
+	UFUNCTION(Client, Reliable)
+	void ClientRemoveItem(class UMNRItems* Item, AActor* OwningActor);
+
+	UFUNCTION(NetMulticast,Reliable)
+	void MulticastAddItem(class UMNRItems* Item, AActor* OwningActor);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastRemoveItem(class UMNRItems* Item, AActor* OwningActor);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void OnAddItem(UMNRItems* Item);
+	void OnAddItem(UMNRItems* Item, AActor* OwningActor);
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void OnRemoveItem(UMNRItems* Item);
+	void OnRemoveItem(UMNRItems* Item, AActor* OwningActor);
 
 	UPROPERTY(EditDefaultsOnly, Instanced)
 	TArray<class UMNRItems*> DefaultItems;
@@ -44,7 +57,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryUpdated OnInventoryUpdated;
-
+	//ReplicatedUsing = OnRep_ItemChanged
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	TArray<class UMNRItems*> Items;
 

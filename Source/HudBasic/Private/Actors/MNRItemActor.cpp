@@ -59,10 +59,7 @@ void AMNRItemActor::Interact_Implementation(APawn* InstigatorPawn)
 		UMNRInventoryComponent* InvtComp = Character->GetInventoryComponent();
 		if (InvtComp)
 		{
-			if (Character->HasAuthority())
-			{
-				InvtComp->ServerAddItem(Item.GetDefaultObject());
-			}
+			InvtComp->MulticastAddItem(Item.GetDefaultObject(),Character);
 			//InvtComp->AddItem(Item.GetDefaultObject());
 		}
 	}
