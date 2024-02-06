@@ -7,6 +7,7 @@
 #include "Interaction/MNRGameplayInterface.h"
 #include "UI/MNRWorldUserWidget.h"
 #include "DrawDebugHelpers.h"
+#include <Character/MNRHeroCharacter.h>
 
 static TAutoConsoleVariable<bool> CVarDebugDrawInteraction(TEXT("mnr.InteractionDebugDraw"), false, TEXT("Enable Debug Lines for Interact Component."), ECVF_Cheat);
 
@@ -42,15 +43,16 @@ void UMNRInteractionComponent::FindBestInteractable()
 
 	AActor* MyOwner = GetOwner();
 
+	AMNRHeroCharacter* MyCharacter = Cast<AMNRHeroCharacter>(MyOwner);
+
 	FVector EyeLocation;
 	FRotator EyeRotation;
 
 	MyOwner->GetActorEyesViewPoint(EyeLocation, EyeRotation);
+	
+	EyeLocation = MyCharacter->GetPawnViewLocation();
 
 	FVector End = EyeLocation + (EyeRotation.Vector() * TraceDistance);
-
-	//FHitResult Hit;
-	//bool bBlockingHit =  GetWorld()->LineTraceSingleByObjectType(Hit, EyeLocation, End, ObjectQueryParams);
 
 	TArray<FHitResult> Hits;
 
@@ -131,7 +133,7 @@ void UMNRInteractionComponent::ServerInteract_Implementation(AActor* InFocus)
 	}
 
 	APawn* MyPawn = Cast<APawn>(GetOwner());
-
+	
 	IMNRGameplayInterface::Execute_Interact(InFocus, MyPawn);
 }
 

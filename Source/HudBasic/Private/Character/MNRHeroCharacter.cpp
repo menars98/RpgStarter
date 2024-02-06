@@ -24,20 +24,17 @@
 // Sets default values
 AMNRHeroCharacter::AMNRHeroCharacter(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(FName("CameraBoom"));
-	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->bUsePawnControlRotation = true;
-	CameraBoom->SetRelativeLocation(FVector(0, 0, 68.492264));
+	CameraBoom->SetupAttachment(RootComponent);
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(FName("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom);
-	FollowCamera->FieldOfView = 80.0f;
 
 	GunComponent = CreateDefaultSubobject<USkeletalMeshComponent>(FName("Gun"));
 
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
-
-	PrimaryActorTick.bCanEverTick = false;
 
 	// Makes sure that the animations play on the Server so that we can use bone and socket transforms
 	// to do things like spawning projectiles and other FX.
@@ -47,7 +44,7 @@ AMNRHeroCharacter::AMNRHeroCharacter(const class FObjectInitializer& ObjectIniti
 
 	//When we make hero class move to hero class below things
 	UIFloatingStatusBarComponent = CreateDefaultSubobject<UWidgetComponent>(FName("UIFloatingStatusBarComponent"));
-	UIFloatingStatusBarComponent->SetupAttachment(RootComponent);
+	//UIFloatingStatusBarComponent->SetupAttachment();
 	UIFloatingStatusBarComponent->SetRelativeLocation(FVector(0, 0, 120));
 	UIFloatingStatusBarComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	UIFloatingStatusBarComponent->SetDrawSize(FVector2D(500, 500));
@@ -97,6 +94,11 @@ void AMNRHeroCharacter::PostInitializeComponents()
 	{
 		GunComponent->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("GunSocket"));
 	}
+}
+
+FVector AMNRHeroCharacter::GetPawnViewLocation() const
+{
+	return FollowCamera->GetComponentLocation();
 }
 
 void AMNRHeroCharacter::PossessedBy(AController* NewController)
@@ -149,6 +151,16 @@ void AMNRHeroCharacter::PossessedBy(AController* NewController)
 void AMNRHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	const APlayerController* PC = GetController<APlayerController>();
+	const ULocalPlayer* LP = PC->GetLocalPlayer();
+
+	UEnhancedInputLocalPlayerSubsystem* SubSystem = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>();
+	check(SubSystem);
+
+	SubSystem->ClearAllMappings();
+
+	SubSystem->AddMappingContext(DefaultMappingContext, 0);
 
 	UMNREnhancedInputComponent* MyEnhancedInputComponent = Cast<UMNREnhancedInputComponent>(PlayerInputComponent);
 

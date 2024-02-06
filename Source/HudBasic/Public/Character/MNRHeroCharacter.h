@@ -40,6 +40,7 @@ public:
 
 	virtual void FinishDying() override;
 
+	virtual FVector GetPawnViewLocation() const override;
 protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "GASDocumentation|Camera")
 	float BaseTurnRate = 45.0f;
@@ -86,6 +87,7 @@ protected:
 
 	virtual void PostInitializeComponents() override;
 
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* DefaultMappingContext;
