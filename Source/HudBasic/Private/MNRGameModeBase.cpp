@@ -11,11 +11,7 @@ AMNRGameModeBase::AMNRGameModeBase()
 {
 	RespawnDelay = 5.0f;
 
-	HeroClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Game/Character/BP_CharacterAlpha.BP_CharacterAlpha_C"));
-	if (!HeroClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("%s() Failed to find HeroClass. If it was moved, please update the reference location in C++."), *FString(__FUNCTION__));
-	}
+
 }
 
 void AMNRGameModeBase::HeroDied(AController* Controller)
@@ -43,6 +39,13 @@ void AMNRGameModeBase::HeroDied(AController* Controller)
 void AMNRGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	//I moved this from the constructor to here to avoid issues if the Blueprint was moved
+	HeroClass = StaticLoadClass(UObject::StaticClass(), nullptr, TEXT("/Game/Character/BP_CharacterAlpha.BP_CharacterAlpha_C"));
+	if (!HeroClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s() Failed to find HeroClass. If it was moved, please update the reference location in C++."), *FString(__FUNCTION__));
+	}
 }
 
 void AMNRGameModeBase::RespawnHero(AController* Controller)

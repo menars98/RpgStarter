@@ -27,13 +27,7 @@ AMNRPlayerState::AMNRPlayerState()
 	// automatically registers the AttributeSet with the AbilitySystemComponent
 	AttributeSetBase = CreateDefaultSubobject<UMNRAttributeSetBase>(TEXT("AttributeSetBase"));
 
-	// Set PlayerState's NetUpdateFrequency to the same as the Character.
-	// Default is very low for PlayerStates and introduces perceived lag in the ability system.
-	// 100 is probably way too high for a shipping game, you can adjust to fit your needs.
-	NetUpdateFrequency = 100.0f;
-
-	// Cache tags
-	DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
+	
 }
 
 UAbilitySystemComponent* AMNRPlayerState::GetAbilitySystemComponent() const
@@ -116,6 +110,17 @@ void AMNRPlayerState::BeginPlay()
 
 	// Tag change callbacks
 	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(FName("State.Debuff.Stun")), EGameplayTagEventType::NewOrRemoved).AddUObject(this, &AMNRPlayerState::StunTagChanged);
+
+	//I move this from the constructor to here to avoid issues if the Blueprint was moved
+	// Cache tags
+	DeadTag = FGameplayTag::RequestGameplayTag(FName("State.Dead"));
+
+	// Set PlayerState's NetUpdateFrequency to the same as the Character.
+	// Default is very low for PlayerStates and introduces perceived lag in the ability system.
+	// 100 is probably way too high for a shipping game, you can adjust to fit your needs.
+	AMNRHeroCharacter* Hero = Cast<AMNRHeroCharacter>(GetPawn());
+
+	Hero->SetNetUpdateFrequency(55.0f);
 }
 
 void AMNRPlayerState::HealthChanged(const FOnAttributeChangeData& Data)

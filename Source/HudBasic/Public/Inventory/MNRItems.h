@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "Abilities/GameplayAbility.h"
 #include "MNRItems.generated.h"
+
 
 class AMNRItemActor;
 class AMNRHeroCharacter;
@@ -24,6 +26,9 @@ public:
 
 	UPROPERTY(ReplicatedUsing = "OnRep_ItemUsed", EditDefaultsOnly, BlueprintReadWrite, Category = "Items")
 	TSubclassOf<UMNRItems> ItemClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
+	TArray<TSubclassOf<UGameplayAbility>> GrantedAbilities;
 
 	UPROPERTY(Transient)
 	class UWorld* World;

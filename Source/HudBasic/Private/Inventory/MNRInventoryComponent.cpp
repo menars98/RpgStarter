@@ -30,7 +30,7 @@ bool UMNRInventoryComponent::AddItem(UMNRItems* Item, AActor* OwningActor)
 {
 	if(Items.Num() >= Capaticy || !Item)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is null or %c: is greater than %c"), *GetNameSafe(Item), Items.Num(), Capaticy);
+		UE_LOG(LogTemp, Warning, TEXT("%s is null or %d: is greater than %d"), *GetNameSafe(Item), Items.Num(), Capaticy);
 		return false;
 	}
 	bool bIsNewItem = true;
@@ -102,7 +102,7 @@ void UMNRInventoryComponent::OnAddItem_Implementation(UMNRItems* Item, AActor* O
 {
 	if (Items.Num() >= Capaticy || !Item)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is null or %c: is greater than %c"), *GetNameSafe(Item), Items.Num(), Capaticy);
+		UE_LOG(LogTemp, Warning, TEXT("%s is null or %d: is greater than %d"), *GetNameSafe(Item), Items.Num(), Capaticy);
 		return;
 	}
 	bool bIsNewItem = true;
