@@ -7,6 +7,8 @@
 #include "EnhancedInputComponent.h"
 #include "MNRGameModeBase.h"
 #include "Attributes/Abilities/MNRAbilitySystemComponent.h"
+#include "Attributes/MNRAttributeSetBase.h"
+#include "GameFramework/PlayerInput.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/WidgetComponent.h"
@@ -114,12 +116,11 @@ void AMNRHeroCharacter::PossessedBy(AController* NewController)
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
 
 		// Set the AttributeSetBase for convenience attribute functions
-		AttributeSetBase = PS->GetAttributeSetBase();
+		AttributeSetBase = TWeakObjectPtr<UMNRAttributeSetBase>(PS->GetAttributeSetBase());
 
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that possession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.
 		InitializeAttributes();
-
 
 		// Respawn specific things that won't affect first possession.
 
@@ -132,8 +133,6 @@ void AMNRHeroCharacter::PossessedBy(AController* NewController)
 		SetStamina(GetMaxStamina());
 
 		// End respawn specific things
-
-
 		AddStartupEffects();
 
 		AddCharacterAbilities();
@@ -173,6 +172,10 @@ void AMNRHeroCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	MyEnhancedInputComponent->BindActionByTag(InputActions, GameplayTags.InputTag_Look_Mouse, ETriggerEvent::Triggered, this, &AMNRHeroCharacter::Input_Look);
 	MyEnhancedInputComponent->BindActionByTag(InputActions, GameplayTags.InputTag_Jump, ETriggerEvent::Triggered, this, &AMNRHeroCharacter::Input_Jump);
 	MyEnhancedInputComponent->BindActionByTag(InputActions, GameplayTags.InputTag_PrimaryInteract, ETriggerEvent::Triggered, this, &AMNRHeroCharacter::PrimaryInteract);
+	//MyEnhancedInputComponent->BindActionByTag(InputActions, GameplayTags.InputTag_Action1, ETriggerEvent::Triggered, this, &AMNRHeroCharacter::Input_Fire);
+
+	// Bind player input to the AbilitySystemComponent. Also called in OnRep_PlayerState because of a potential race condition.
+	BindASCInput();
 }
 
 void AMNRHeroCharacter::Input_Jump()
@@ -180,9 +183,13 @@ void AMNRHeroCharacter::Input_Jump()
 	Jump();
 }
 
-/*void AMNRBaseCharacter::Input_Fire(const FInputActionValue& InputActionValue)
+void AMNRHeroCharacter::Input_Fire(const FInputActionValue& InputActionValue)
 {
-}*/
+	if (AbilitySystemComponent.IsValid())
+	{
+		AbilitySystemComponent->AbilityLocalInputPressed(static_cast<int32>(EMNRAbilityInputID::Action1));
+	}
+}
 
 void AMNRHeroCharacter::Input_Move(const FInputActionValue& Value)
 {
@@ -260,6 +267,40 @@ void AMNRHeroCharacter::InitializeFloatingStatusBar()
 	}
 }
 
+void AMNRHeroCharacter::GrantItemAbilities(const UMNRItems* ItemData)
+{
+	// Önce varsa eski item'ýn yeteneklerini temizle.
+	RemoveItemAbilities();
+
+
+	for (const TSubclassOf<UGameplayAbility>& AbilityClass : ItemData->GrantedAbilities)
+	{
+		if (AbilityClass)
+		{
+			// For now, let's assume we've assigned all item abilities to Action1.
+			// In a more advanced system, ItemData might also contain information about which ability goes to which InputID.
+			FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(AbilityClass, 1, static_cast<int32>(EMNRAbilityInputID::Action1), this);
+
+			FGameplayAbilitySpecHandle GrantedHandle = AbilitySystemComponent->GiveAbility(AbilitySpec);
+			EquippedItemAbilityHandles.Add(GrantedHandle);
+		}
+	}
+}
+
+void AMNRHeroCharacter::RemoveItemAbilities()
+{
+
+
+	//Remove from ASC
+	for (const FGameplayAbilitySpecHandle& Handle : EquippedItemAbilityHandles)
+	{
+		AbilitySystemComponent->ClearAbility(Handle);
+	}
+
+	// Clear Handle
+	EquippedItemAbilityHandles.Empty();
+}
+
 void AMNRHeroCharacter::UseItem(UMNRItems* Item)
 {
 		MulticastUseItem(Item);
@@ -294,7 +335,7 @@ void AMNRHeroCharacter::OnRep_PlayerState()
 		//@TODO Later If we Want GAS We need to like this : BindASCInput();
 
 		// Set the AttributeSetBase for convenience attribute functions
-		AttributeSetBase = PS->GetAttributeSetBase();
+		AttributeSetBase = TWeakObjectPtr<UMNRAttributeSetBase>(PS->GetAttributeSetBase());
 
 		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that posession from rejoining doesn't reset attributes.
 		// For now assume possession = spawn/respawn.
@@ -365,4 +406,45 @@ void AMNRHeroCharacter::FinishDying()
 	}
 
 	Super::FinishDying();
+}
+
+void AMNRHeroCharacter::BindASCInput()
+{
+	if (!ASCInputBound && AbilitySystemComponent.IsValid() && InputComponent && InputActions)
+	{
+		UEnhancedInputComponent* MyEnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent);
+		if (MyEnhancedInputComponent)
+		{
+			for (const FTaggedInputAction& Action : InputActions->AbilityInputActions)
+			{
+				if (Action.InputAction && Action.InputID != EMNRAbilityInputID::None)
+				{
+					//Useful for skills involving the style of releasing and holding flame bursts
+					// Link the ‘Triggered’ (press) moment of the action.
+					MyEnhancedInputComponent->BindAction(Action.InputAction, ETriggerEvent::Triggered, this, &AMNRHeroCharacter::ASCInputPressed, Action.InputID);
+
+					// Link the moment the action is ‘Completed’ (abandoned).
+					MyEnhancedInputComponent->BindAction(Action.InputAction, ETriggerEvent::Completed, this, &AMNRHeroCharacter::ASCInputReleased, Action.InputID);
+				}
+			}
+		}
+
+		ASCInputBound = true; // Mark to prevent reconnection.
+	}
+}
+
+void AMNRHeroCharacter::ASCInputPressed(EMNRAbilityInputID InputID)
+{
+	if (AbilitySystemComponent.IsValid())
+	{
+		AbilitySystemComponent->AbilityLocalInputPressed(static_cast<int32>(InputID));
+	}
+}
+
+void AMNRHeroCharacter::ASCInputReleased(EMNRAbilityInputID InputID)
+{
+	if (AbilitySystemComponent.IsValid())
+	{
+		AbilitySystemComponent->AbilityLocalInputReleased(static_cast<int32>(InputID));
+	}
 }

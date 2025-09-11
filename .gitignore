@@ -45,6 +45,10 @@
 SourceArt/**/*.png
 SourceArt/**/*.tga
 
+# Visual Studio / Rider
+.idea/
+*.sln.dotsettings.user
+
 # Binary Files
 Binaries/*
 Plugins/*/Binaries/*
@@ -72,3 +76,6 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Other
+*.pid

@@ -23,6 +23,7 @@ public:
 	FGameplayTag InputTag_Jump;
 	FGameplayTag InputTag_Fire;
 	FGameplayTag InputTag_PrimaryInteract;
+	FGameplayTag InputTag_Action1;
 
 protected:
 

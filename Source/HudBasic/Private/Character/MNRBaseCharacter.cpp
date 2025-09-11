@@ -6,6 +6,7 @@
 
 #include "Attributes/MNRAttributeSetBase.h"
 #include "Attributes/Abilities/MNRAbilitySystemComponent.h"
+#include "Attributes/Abilities/MNRBaseGameplayAbility.h"
 #include "Components/CapsuleComponent.h"
 #include "Config/MNRGameplayTags.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -90,8 +91,22 @@ void AMNRBaseCharacter::BeginPlay()
 
 void AMNRBaseCharacter::AddCharacterAbilities()
 {
-	//TODO Add GAS
+	if (GetLocalRole() != ROLE_Authority || !AbilitySystemComponent.IsValid() || AbilitySystemComponent->bCharacterAbilitiesGiven)
+	{
+		return;
+	}
+	//@TODO Add GAS
 	//For GameplayAbility
+
+	for (TSubclassOf<UMNRBaseGameplayAbility>& StartupAbility : CharacterAbilities)
+	{
+		// Create FGameplayAbilitySpec and assign InputID.
+		AbilitySystemComponent->GiveAbility(
+			FGameplayAbilitySpec(StartupAbility, 1, static_cast<int32>(EMNRAbilityInputID::Primary), this));
+	}
+
+	AbilitySystemComponent->bCharacterAbilitiesGiven = true;
+
 }
 
 void AMNRBaseCharacter::InitializeAttributes()

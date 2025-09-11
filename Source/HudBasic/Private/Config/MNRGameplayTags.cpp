@@ -23,6 +23,7 @@ void FMNRGameplayTags::AddAllTags(UGameplayTagsManager& Manager)
 	AddTag(InputTag_Look_Mouse, "InputTag.Look.Mouse", "Look (mouse) input.");
 	AddTag(InputTag_Jump, "InputTag.Jump", "Jump input");
 	AddTag(InputTag_PrimaryInteract, "InputTag.PrimaryInteract", "Interact");
+	AddTag(InputTag_Action1, "InputTag.Ability.Action1", "Action1");
 }
 
 void FMNRGameplayTags::AddTag(FGameplayTag& OutTag, const ANSICHAR* TagName, const ANSICHAR* TagComment)

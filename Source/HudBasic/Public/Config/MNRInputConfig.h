@@ -5,7 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "Engine/DataAsset.h"
+#include <HudBasic/HudBasic.h>
 #include "MNRInputConfig.generated.h"
+
 
 class UInputAction;
 struct FGameplayTag;
@@ -24,8 +26,13 @@ public:
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<const UInputAction> InputAction = nullptr;
 
+	//We can hold it for another purposes
 	UPROPERTY(EditDefaultsOnly, Meta = (Categories = "InputTag"))
 	FGameplayTag InputTag;
+
+	// This InputID determines which ability slot will be activated when this action is triggered.
+	UPROPERTY(EditDefaultsOnly)
+	EMNRAbilityInputID InputID = EMNRAbilityInputID::None;
 };
 
 

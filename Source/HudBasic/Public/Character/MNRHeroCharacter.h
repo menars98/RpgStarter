@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "MNRBaseCharacter.h"
+#include "GameplayAbilitySpecHandle.h"
 #include "MNRHeroCharacter.generated.h"
+
 
 struct FItemData;
 class UCameraComponent;
@@ -87,13 +89,25 @@ protected:
 
 	virtual void PostInitializeComponents() override;
 
+	// Called from both SetupPlayerInputComponent and OnRep_PlayerState because of a potential race condition where the PlayerController might
+	// call ClientRestart which calls SetupPlayerInputComponent before the PlayerState is repped to the client so the PlayerState would be null in SetupPlayerInputComponent.
+	// Conversely, the PlayerState might be repped before the PlayerController calls ClientRestart so the Actor's InputComponent would be null in OnRep_PlayerState.
+	void BindASCInput();
 	
+	void ASCInputPressed(EMNRAbilityInputID InputID);
+	void ASCInputReleased(EMNRAbilityInputID InputID);
+
+	bool ASCInputBound = false;
+
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* DefaultMappingContext;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UMNRInputConfig* InputActions;
+
+	UPROPERTY()
+	TArray<FGameplayAbilitySpecHandle> EquippedItemAbilityHandles;
 
 public:
 
@@ -103,6 +117,13 @@ public:
 	// Safe to call many times because it checks to make sure it only executes once.
 	UFUNCTION()
 	void InitializeFloatingStatusBar();
+
+	//@TODO We can expose it to blueprint if we want to add ability from blueprint
+	UFUNCTION(BlueprintCallable, Category = "Items")
+	void GrantItemAbilities(const UMNRItems* ItemData);
+
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	void RemoveItemAbilities();
 
 	UFUNCTION(BlueprintCallable, Category = "Items")
 	void UseItem(class UMNRItems* Item);
@@ -120,7 +141,7 @@ public:
 	void Input_Jump();
 
 	/** @TODO we can add fire later */
-	//void Input_Fire(const FInputActionValue& InputActionValue);
+	void Input_Fire(const FInputActionValue& InputActionValue);
 
 	/** Called for movement input */
 	void Input_Move(const FInputActionValue& Value);
