@@ -11,6 +11,7 @@
 #include "Player/MNRPlayerController.h"
 #include "UI/MNRBarWidget.h"
 #include "UI/MNRFloatingStatusBarWidget.h"
+#include "Character/Minions/MNRMinionBaseCharacter.h"
 
 AMNRPlayerState::AMNRPlayerState()
 {

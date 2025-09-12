@@ -7,6 +7,19 @@
 #include "AbilitySystemComponent.h"
 #include "MNRAttributeSetBase.generated.h"
 
+USTRUCT(BlueprintType)
+struct FMNRAttributeInitData : public FTableRowBase
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayAttribute Attribute;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float BaseValue;
+};
+
 // Uses macros from AttributeSet.h
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \

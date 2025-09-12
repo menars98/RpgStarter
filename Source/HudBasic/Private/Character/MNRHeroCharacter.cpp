@@ -347,6 +347,9 @@ void AMNRHeroCharacter::OnRep_PlayerState()
 			PC->CreateHUD();
 		}
 
+		BindASCInput();
+
+
 		// Simulated on proxies don't have their PlayerStates yet when BeginPlay is called so we call it again here
 		InitializeFloatingStatusBar();
 

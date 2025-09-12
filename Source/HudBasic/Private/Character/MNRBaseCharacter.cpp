@@ -2,8 +2,6 @@
 
 
 #include "Character/MNRBaseCharacter.h"
-
-
 #include "Attributes/MNRAttributeSetBase.h"
 #include "Attributes/Abilities/MNRAbilitySystemComponent.h"
 #include "Attributes/Abilities/MNRBaseGameplayAbility.h"
