@@ -15,7 +15,7 @@ class AMNRHeroCharacter;
 /**
  * 
  */
-UCLASS(Abstract, BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
+UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
 class HUDBASIC_API UMNRItems : public UObject
 {
 	GENERATED_BODY()

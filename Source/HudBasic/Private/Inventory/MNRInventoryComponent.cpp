@@ -8,7 +8,7 @@
 // Sets default values for this component's properties
 UMNRInventoryComponent::UMNRInventoryComponent()
 {
-	Capaticy = 20;
+	Capacity = 20;
 	// Component must be replicated to replicate sub-objects
 	SetIsReplicatedByDefault(true);
 }
@@ -19,140 +19,158 @@ void UMNRInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	for(auto& Item : DefaultItems)
-	{
-		AddItem(Item, this->GetOwner());
-	}
-	
 }
 
-bool UMNRInventoryComponent::AddItem(UMNRItems* Item, AActor* OwningActor)
+// Client or Server, everyone calls this function.
+void UMNRInventoryComponent::TryAddItem(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
 {
-	if(Items.Num() >= Capaticy || !Item)
+	// If this is the Server running this code, execute the direct insertion logic.
+	if (GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is null or %d: is greater than %d"), *GetNameSafe(Item), Items.Num(), Capaticy);
-		return false;
+		AddItem_Internal(ItemClass, StackCount);
 	}
-	bool bIsNewItem = true;
-	for(auto& ItemVar: Items)
+	// If it is the Client, send a request to the Server.
+	else
 	{
-		if(ItemVar->ItemClass.GetDefaultObject() == Item->ItemClass.GetDefaultObject())
-		{
-			++ItemVar->StackCount;
-			bIsNewItem = false;
-			break;
-		}
+		Server_TryAddItem(ItemClass, StackCount);
 	}
-	if(bIsNewItem)
+}
+
+void UMNRInventoryComponent::TryRemoveItem(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
+{
+	if (GetOwner()->HasAuthority())
 	{
-		Item->OwningInventory = this;
-		Item->World = GetWorld();
-		Items.Add(Item);
-		//Update UI
-		OnInventoryUpdated.Broadcast(OwningActor);
+		RemoveItem_Internal(ItemClass, StackCount);
 	}
 	else
 	{
-		OnInventoryUpdated.Broadcast(OwningActor);
+		Server_TryRemoveItem(ItemClass, StackCount);
 	}
-	return true;
 }
 
-bool UMNRInventoryComponent::RemoveItem(UMNRItems* Item, AActor* OwningActor)
+
+void UMNRInventoryComponent::Server_TryAddItem_Implementation(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
 {
-	if(Item->StackCount <1)
+	AddItem_Internal(ItemClass, StackCount);
+}
+
+void UMNRInventoryComponent::Server_TryRemoveItem_Implementation(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
+{
+	RemoveItem_Internal(ItemClass, StackCount);
+}
+
+bool UMNRInventoryComponent::AddItem_Internal(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
+{
+	if (!ItemClass || StackCount <= 0)
 	{
-		Item->OwningInventory = nullptr;
-		Item->World = nullptr;
-		Items.RemoveSingle(Item);
-		//Update UI
-		OnInventoryUpdated.Broadcast(OwningActor);
+		return false;
+	}
+
+	AActor* OwningActor = GetOwner();
+	if (!OwningActor)
+	{
+		return false;
+	}
+
+	// 2. Capacity Check: Is there space in the inventory?
+	// Note: This check is only meaningful if a new slot is being added.
+	// If we are adding to an existing item, we may not exceed the capacity.
+	// Therefore, we can move this check after the stacking check.
+
+	// 3. Stacking Check: Is this item already in the inventory?
+	for (UMNRItems* ExistingItem : Items)
+	{
+		if (ExistingItem && ExistingItem->GetClass() == ItemClass)
+		{
+			ExistingItem->StackCount += StackCount;
+
+			OnRep_Items();
+
+			return true;
+		}
+	}
+
+	// 4. Adding a New Slot: This item is not in the inventory, so we will add a new slot.
+	// Now let's check the capacity again.
+	if (Items.Num() >= Capacity)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Inventory is full. Cannot add new item class: %s"), *ItemClass->GetName());
+		return false;
+	}
+
+	// 5. Creating a New UObject
+	// We set OwningActor as the Outer so its lifetime is tied to the character.
+	UMNRItems* NewItem = NewObject<UMNRItems>(OwningActor, ItemClass);
+	if (NewItem)
+	{
+		NewItem->StackCount = StackCount;
+		NewItem->OwningInventory = this;
+		NewItem->World = GetWorld();
+
+		Items.Add(NewItem);
+
+		OnRep_Items();
+
 		return true;
 	}
-	if(Item && Item->StackCount > 0)
-	{
-		--Item->StackCount;
-		OnInventoryUpdated.Broadcast(OwningActor);
-		return true;
-	}
+
 	return false;
 }
 
-void UMNRInventoryComponent::ClientAddItem_Implementation(UMNRItems* Item, AActor* OwningActor)
-{
-	AddItem(Item, OwningActor);
-}
 
-void UMNRInventoryComponent::ClientRemoveItem_Implementation(UMNRItems* Item, AActor* OwningActor)
+bool UMNRInventoryComponent::RemoveItem_Internal(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
 {
-	RemoveItem(Item, OwningActor);
-}
-
-void UMNRInventoryComponent::ServerAddItem_Implementation(UMNRItems* Item, AActor* OwningActor)
-{
-	AddItem(Item, OwningActor);
-}
-
-void UMNRInventoryComponent::ServerRemoveItem_Implementation(UMNRItems* Item, AActor* OwningActor)
-{
-	RemoveItem(Item, OwningActor);
-}
-
-void UMNRInventoryComponent::OnAddItem_Implementation(UMNRItems* Item, AActor* OwningActor)
-{
-	if (Items.Num() >= Capaticy || !Item)
+	// 1. Girdi Kontrolü
+	if (!ItemClass || StackCount <= 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s is null or %d: is greater than %d"), *GetNameSafe(Item), Items.Num(), Capaticy);
-		return;
+		return false;
 	}
-	bool bIsNewItem = true;
 
-	for (auto& ItemVar : Items)
+	// 2. Kaldýrýlacak Item'ý Bul
+	for (int32 i = 0; i < Items.Num(); ++i)
 	{
-		if (ItemVar->ItemClass.GetDefaultObject() == Item->ItemClass.GetDefaultObject())
+		UMNRItems* Item = Items[i];
+		if (Item && Item->GetClass() == ItemClass)
 		{
-			++ItemVar->StackCount;
-			bIsNewItem = false;
-			break;
+			// 3. Yýðýndan Çýkarma veya Tamamen Kaldýrma
+			if (Item->StackCount > StackCount)
+			{
+				// Yýðýndan sadece bir kýsmýný çýkar.
+				Item->StackCount -= StackCount;
+			}
+			else
+			{
+				// Ýstenen miktar, yýðýndaki miktara eþit veya daha fazla.
+				// Tüm yýðýný kaldýr.
+				Items.RemoveAt(i);
+
+				// UObject'in artýk bir referansý kalmadýðý için Garbage Collector
+				// tarafýndan temizlenmesini bekle. Ýstersen MarkAsGarbage() ile
+				// bu süreci hýzlandýrabilirsin.
+				Item->MarkAsGarbage();
+			}
+
+			// Sunucu tarafýnda UI'ýn anýnda güncellenmesi için OnRep'i manuel çaðýr.
+			OnRep_Items();
+
+			return true; // Ýþlem baþarýyla tamamlandý.
 		}
 	}
-	if (bIsNewItem)
-	{
-		Item->OwningInventory = this;
-		Item->World = GetWorld();
-		Items.Add(Item);
-		//Update UI
-		OnInventoryUpdated.Broadcast(OwningActor);
-	}
-	else
-	{
-		OnInventoryUpdated.Broadcast(OwningActor);
-	}
+
+	// 4. Item Bulunamadý
+	UE_LOG(LogTemp, Warning, TEXT("Could not find item class %s to remove."), *ItemClass->GetName());
+	return false;
 }
 
-void UMNRInventoryComponent::OnRemoveItem_Implementation(UMNRItems* Item, AActor* OwningActor)
+void UMNRInventoryComponent::OnRep_Items()
 {
-	if (Item->StackCount < 1)
-	{
-		Item->OwningInventory = nullptr;
-		Item->World = nullptr;
-		Items.RemoveSingle(Item);
-		//Update UI
-		OnInventoryUpdated.Broadcast(OwningActor);
-	}
-	if (Item && Item->StackCount > 0)
-	{
-		Item->StackCount--;
-		OnInventoryUpdated.Broadcast(OwningActor);
-	}
+   OnInventoryUpdated.Broadcast(GetOwner());
 }
 
-void UMNRInventoryComponent::MulticastAddItem_Implementation(UMNRItems* Item, AActor* OwningActor)
+// Specify that the Items array and the UObjects within it will be replicated.
+void UMNRInventoryComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	AddItem(Item, OwningActor);
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UMNRInventoryComponent, Items);
 }
 
-void UMNRInventoryComponent::MulticastRemoveItem_Implementation(UMNRItems* Item, AActor* OwningActor)
-{
-	RemoveItem(Item, OwningActor);
-}

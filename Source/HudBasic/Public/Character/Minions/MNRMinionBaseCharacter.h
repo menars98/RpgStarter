@@ -34,7 +34,9 @@ protected:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "UI")
 	TSubclassOf<class UMNRFloatingStatusBarWidget> UIFloatingStatusBarClass;
 
-	UPROPERTY()
+	// Holds the actual reference to the bar widget (after it is created).
+	// transient = not saved, recreated each time.
+	UPROPERTY(Transient)
 	class UMNRFloatingStatusBarWidget* UIFloatingStatusBar;
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "|UI")

@@ -5,12 +5,27 @@
 #include "CoreMinimal.h"
 #include "MNRBaseCharacter.h"
 #include "GameplayAbilitySpecHandle.h"
+#include <ActiveGameplayEffectHandle.h>
 #include "MNRHeroCharacter.generated.h"
+
 
 
 struct FItemData;
 class UCameraComponent;
 class USpringArmComponent;
+class UMNREquipmentItem;
+
+USTRUCT(BlueprintType)
+struct FStartingItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+	TSubclassOf<UMNRItems> ItemClass;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory", meta = (ClampMin = 1))
+	int32 StackCount = 1;
+};
 
 UCLASS()
 class HUDBASIC_API AMNRHeroCharacter : public AMNRBaseCharacter
@@ -43,7 +58,25 @@ public:
 	virtual void FinishDying() override;
 
 	virtual FVector GetPawnViewLocation() const override;
+
+	// ---Save/Load--- //
+	UFUNCTION(BlueprintCallable, Category = "SaveLoad")
+	class UMNRSaveGame* GenerateSaveData() const;
+
+	UFUNCTION(BlueprintCallable, Category = "SaveLoad")
+	void LoadFromSaveData(const UMNRSaveGame* SaveData);
+
+	// ---Save/Load END--- //
 protected:
+
+	TMap<FGameplayTag, TObjectPtr<USkeletalMeshComponent>> EquipmentSlotToMeshComponentMap;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Equipment")
+	TObjectPtr<USkeletalMeshComponent> HelmetMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Equipment")
+	TObjectPtr<USkeletalMeshComponent> ChestMesh;
+
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "GASDocumentation|Camera")
 	float BaseTurnRate = 45.0f;
 
@@ -100,6 +133,10 @@ protected:
 	bool ASCInputBound = false;
 
 protected:
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
+	TArray<FStartingItem> DefaultItems;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* DefaultMappingContext;
 
@@ -109,10 +146,16 @@ protected:
 	UPROPERTY()
 	TArray<FGameplayAbilitySpecHandle> EquippedItemAbilityHandles;
 
+	UPROPERTY()
+	TMap<FGameplayTag, FActiveGameplayEffectHandle> EquippedEffectHandles;
+
 public:
 
-	virtual class UMNRInventoryComponent* GetInventoryComponent() const;
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	class UMNRInventoryComponent* GetInventoryComponent() const;
 
+	
+	void InitializeEquipmentSlotMap();
 	// Creates and initializes the floating status bar for heroes.
 	// Safe to call many times because it checks to make sure it only executes once.
 	UFUNCTION()
@@ -122,8 +165,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Items")
 	void GrantItemAbilities(const UMNRItems* ItemData);
 
-	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	UFUNCTION(BlueprintCallable, Category = "Equipment|Abilities")
 	void RemoveItemAbilities();
+
+	UFUNCTION(BlueprintCallable, Category = "Equipment")
+	void EquipItem(UMNREquipmentItem* ItemToEquip);
+
+	UFUNCTION(BlueprintCallable, Category = "Equipment")
+	void UnequipItemFromSlot(const FGameplayTag& SlotTag);
 
 	UFUNCTION(BlueprintCallable, Category = "Items")
 	void UseItem(class UMNRItems* Item);
@@ -153,4 +202,5 @@ public:
 
 	//UFUNCTION(BlueprintImplementableEvent, Category = "MNR")
 	//void AddItemToInventoryWidget(UMNRItems* Item);
+
 };

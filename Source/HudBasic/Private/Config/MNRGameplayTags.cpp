@@ -24,6 +24,7 @@ void FMNRGameplayTags::AddAllTags(UGameplayTagsManager& Manager)
 	AddTag(InputTag_Jump, "InputTag.Jump", "Jump input");
 	AddTag(InputTag_PrimaryInteract, "InputTag.PrimaryInteract", "Interact");
 	AddTag(InputTag_Action1, "InputTag.Ability.Action1", "Action1");
+	AddTag(Equipment_Slot_Head, "Equipment.Slot.Head", "Head equipment slot");
 }
 
 void FMNRGameplayTags::AddTag(FGameplayTag& OutTag, const ANSICHAR* TagName, const ANSICHAR* TagComment)

@@ -14,3 +14,13 @@ enum class EMNRAbilityInputID : uint8
     Secondary,  // Ýkincil Saldýrý (örn: Sað Týk)
     Action1     // F tuþu gibi özel bir eylem
 };
+
+UENUM(BlueprintType)
+enum class EEquipmentSlot : uint8
+{
+    None        UMETA(DisplayName = "None"),
+    Helmet      UMETA(DisplayName = "Helmet"),
+    Chest       UMETA(DisplayName = "Chest"),
+    Weapon      UMETA(DisplayName = "Weapon")
+    // Ýleride eklenecek diðer slotlar (Boots, Gloves vb.)
+};

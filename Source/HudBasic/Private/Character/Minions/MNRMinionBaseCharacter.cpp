@@ -59,7 +59,7 @@ void AMNRMinionBaseCharacter::BeginPlay()
 		APlayerController* PC = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 		if (PC && PC->IsLocalPlayerController())
 		{
-			if (UIFloatingStatusBarClass)
+			/*if (UIFloatingStatusBarClass)
 			{
 				UIFloatingStatusBar = CreateWidget<UMNRFloatingStatusBarWidget>(PC, UIFloatingStatusBarClass);
 				if (UIFloatingStatusBar && UIFloatingStatusBarComponent)
@@ -71,7 +71,7 @@ void AMNRMinionBaseCharacter::BeginPlay()
 
 					UIFloatingStatusBar->SetCharacterName(CharacterName);
 				}
-			}
+			}*/
 		}
 
 		// Attribute change callbacks
@@ -89,10 +89,26 @@ void AMNRMinionBaseCharacter::HealthChanged(const FOnAttributeChangeData& Data)
 	
 	OnHealthChanged(NewHealth, MaxHealth);
 
+	
+	if (!UIFloatingStatusBar)
+	{
+		if (UIFloatingStatusBarClass)
+		{
+			UIFloatingStatusBarComponent->SetWidgetClass(UIFloatingStatusBarClass);
+
+			UUserWidget* Widget = UIFloatingStatusBarComponent->GetUserWidgetObject();
+			UIFloatingStatusBar = Cast<UMNRFloatingStatusBarWidget>(Widget);
+
+			UIFloatingStatusBarComponent->SetVisibility(true);
+		}
+	}
 	// Update floating status bar
 	if (UIFloatingStatusBar)
 	{
-		UIFloatingStatusBar->SetHealthPercentage(NewHealth / GetMaxHealth());
+		if (MaxHealth > 0.0f)
+		{
+			UIFloatingStatusBar->SetHealthPercentage(Data.NewValue / MaxHealth);
+		}
 	}
 
 	// If the minion died, handle death

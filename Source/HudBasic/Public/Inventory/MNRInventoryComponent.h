@@ -3,10 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Inventory/MNRItems.h"
 #include "Components/ActorComponent.h"
 #include "MNRInventoryComponent.generated.h"
 
 struct FItemData;
+class UMNRItems;
+
 /*Blueprints will bind to this to update UI*/
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInventoryUpdated, AActor*, OwningActor);
 
@@ -21,46 +24,59 @@ public:
 
 	virtual void BeginPlay() override;
 
-	bool AddItem(class UMNRItems* Item, AActor* OwningActor);
-	bool RemoveItem(class UMNRItems* Item, AActor* OwningActor);
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void TryAddItem(TSubclassOf<UMNRItems> ItemClass, int32 StackCount = 1);
 
-	//@TODO Fix this functions all of them doing same thing
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void TryRemoveItem(TSubclassOf<UMNRItems> ItemClass, int32 StackCount = 1);
+
+	// This is the actual insertion logic that runs ONLY ON THE SERVER.
+	bool AddItem_Internal(TSubclassOf<UMNRItems> ItemClass, int32 StackCount);
+
+	bool RemoveItem_Internal(TSubclassOf<UMNRItems> ItemClass, int32 StackCount);
+
+	// RPC that receives the “add item” request from the client.
 	UFUNCTION(Server, Reliable)
-	void ServerAddItem(class UMNRItems* Item, AActor* OwningActor);
+	void Server_TryAddItem(TSubclassOf<UMNRItems> ItemClass, int32 StackCount);
 
 	UFUNCTION(Server, Reliable)
-	void ServerRemoveItem(class UMNRItems* Item, AActor* OwningActor);
+	void Server_TryRemoveItem(TSubclassOf<UMNRItems> ItemClass, int32 StackCount);
 
-	UFUNCTION(Client, Reliable)
-	void ClientAddItem(class UMNRItems* Item, AActor* OwningActor);
+	// Clients call this function when the Items array is updated.
+	// This is the best place to update the UI.
+	UFUNCTION()
+	void OnRep_Items();
 
-	UFUNCTION(Client, Reliable)
-	void ClientRemoveItem(class UMNRItems* Item, AActor* OwningActor);
-
-	UFUNCTION(NetMulticast,Reliable)
-	void MulticastAddItem(class UMNRItems* Item, AActor* OwningActor);
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastRemoveItem(class UMNRItems* Item, AActor* OwningActor);
-
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void OnAddItem(UMNRItems* Item, AActor* OwningActor);
-
-	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
-	void OnRemoveItem(UMNRItems* Item, AActor* OwningActor);
+	const TArray<UMNRItems*>& GetItems() const { return Items; }
 
 	UPROPERTY(EditDefaultsOnly, Instanced)
 	TArray<class UMNRItems*> DefaultItems;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
-	int32 Capaticy;
+	int32 Capacity;
 
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryUpdated OnInventoryUpdated;
+
 	//ReplicatedUsing = OnRep_ItemChanged
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Items")
 	TArray<class UMNRItems*> Items;
 
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    UMNRItems* FindItemByClass(TSubclassOf<UMNRItems> ItemClass) const
+    {
+        for (UMNRItems* Item : Items)
+        {
+            if (Item && Item->IsA(ItemClass))
+            {
+                return Item;
+            }
+        }
+        return nullptr;
+    }
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
 
 	//virtual bool ReplicateSubobjects(UActorChannel* Channel, FOutBunch* Bunch, FReplicationFlags* RepFlags) override;
 };
+

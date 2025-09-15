@@ -12,7 +12,7 @@
 #define LOCTEXT_NAMESPACE "InteractableActors"
 
 // Sets default values
-AMNRItemActor::AMNRItemActor():Item()
+AMNRItemActor::AMNRItemActor():ItemClass()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
@@ -59,7 +59,7 @@ void AMNRItemActor::Interact_Implementation(APawn* InstigatorPawn)
 		UMNRInventoryComponent* InvtComp = Character->GetInventoryComponent();
 		if (InvtComp)
 		{
-			InvtComp->MulticastAddItem(Item.GetDefaultObject(),Character);
+			InvtComp->TryAddItem(ItemClass, 1);
 			//InvtComp->AddItem(Item.GetDefaultObject());
 		}
 	}

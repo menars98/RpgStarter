@@ -13,137 +13,42 @@ static TAutoConsoleVariable<bool> CVarDebugDrawASC(TEXT("mnr.ASCDebug"), false, 
 
 void UMNRFoodItem::Use(AActor* Instigator)
 {
-	if (Instigator->HasAuthority())
+	if (Instigator && Instigator->HasAuthority())
 	{
-		ServerUse_Implementation(Instigator);
-	}
-	else
-	{
-		ClientUse_Implementation(Instigator);
-	}
-}
-
-void UMNRFoodItem::ServerUse_Implementation(AActor* Instigator)
-{
-	bool bDebugDraw = CVarDebugDrawASC.GetValueOnGameThread();
-	AMNRHeroCharacter* Character = Cast<AMNRHeroCharacter>(Instigator);
-	if (Character)
-	{
-		//Gameplay effect for food items.
-		UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
-
-		if (ASC && Character->IsAlive())
+		bool bDebugDraw = CVarDebugDrawASC.GetValueOnGameThread();
+		AMNRHeroCharacter* Character = Cast<AMNRHeroCharacter>(Instigator);
+		if (Character)
 		{
-			FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-			EffectContext.AddSourceObject(this);
+			//Gameplay effect for food items.
+			UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
 
-			FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(DefaultAttributes, Character->AttributeSetBase->GetCharacterLevel(), EffectContext);
-			if (NewHandle.IsValid())
+			if (ASC && Character->IsAlive())
 			{
-				ASC->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), Character->AbilitySystemComponent.Get());
-			}
+				FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
+				EffectContext.AddSourceObject(this);
 
-			if (OwningInventory)
-			{
-					OwningInventory->ServerRemoveItem(this, Instigator);
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("%s is null"), *GetNameSafe(ASC));
-
-		}
-		if (bDebugDraw)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Red, (TEXT("%s: is asc"), *GetNameSafe(ASC)));
-			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Red, (TEXT("%s: is Character"), *GetNameSafe(Character)));
-
-		}
-	}
-}
-
-void UMNRFoodItem::ClientUse_Implementation(AActor* Instigator)
-{
-	bool bDebugDraw = CVarDebugDrawASC.GetValueOnGameThread();
-	AMNRHeroCharacter* Character = Cast<AMNRHeroCharacter>(Instigator);
-	if (Character)
-	{
-		//Gameplay effect for food items.
-		UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
-
-		if (ASC && Character->IsAlive())
-		{
-			FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-			EffectContext.AddSourceObject(this);
-
-			FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(DefaultAttributes, Character->AttributeSetBase->GetCharacterLevel(), EffectContext);
-			if (NewHandle.IsValid())
-			{
-				ASC->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), Character->AbilitySystemComponent.Get());
-			}
-
-			if (OwningInventory)
-			{
-					OwningInventory->ClientRemoveItem(this, Instigator);
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("%s is null"), *GetNameSafe(ASC));
-
-		}
-		if (bDebugDraw)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Red, (TEXT("%s: is asc"), *GetNameSafe(ASC)));
-			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Red, (TEXT("%s: is Character"), *GetNameSafe(Character)));
-
-		}
-	}
-}
-
-void UMNRFoodItem::OnRep_ItemUsed()
-{
-	bool bDebugDraw = CVarDebugDrawASC.GetValueOnGameThread();
-	AMNRHeroCharacter* Character = Cast<AMNRHeroCharacter>(GetOwningActor());
-	if (Character)
-	{
-		//Gameplay effect for food items.
-		UAbilitySystemComponent* ASC = Character->GetAbilitySystemComponent();
-
-		if (ASC && Character->IsAlive())
-		{
-			FGameplayEffectContextHandle EffectContext = ASC->MakeEffectContext();
-			EffectContext.AddSourceObject(this);
-
-			FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(DefaultAttributes, Character->AttributeSetBase->GetCharacterLevel(), EffectContext);
-			if (NewHandle.IsValid())
-			{
-				ASC->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), Character->AbilitySystemComponent.Get());
-			}
-
-			if (OwningInventory)
-			{
-				if (Character->HasAuthority())
+				FGameplayEffectSpecHandle NewHandle = ASC->MakeOutgoingSpec(DefaultAttributes, Character->AttributeSetBase->GetCharacterLevel(), EffectContext);
+				if (NewHandle.IsValid())
 				{
-					OwningInventory->ServerRemoveItem(this, GetOwningActor());
+					ASC->ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), Character->AbilitySystemComponent.Get());
 				}
-				else
+
+				if (OwningInventory)
 				{
-					OwningInventory->ClientRemoveItem(this, GetOwningActor());
+					OwningInventory->TryRemoveItem(this->ItemClass, 1);
 				}
 			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("%s is null"), *GetNameSafe(ASC));
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("%s is null"), *GetNameSafe(ASC));
 
-		}
-		if (bDebugDraw)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Red, (TEXT("%s: is asc"), *GetNameSafe(ASC)));
-			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Red, (TEXT("%s: is Character"), *GetNameSafe(Character)));
+			}
+			if (bDebugDraw)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Red, (TEXT("%s: is asc"), *GetNameSafe(ASC)));
+				GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Red, (TEXT("%s: is Character"), *GetNameSafe(Character)));
 
+			}
 		}
 	}
 }
-

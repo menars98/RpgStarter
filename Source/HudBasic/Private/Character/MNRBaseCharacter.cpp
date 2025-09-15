@@ -63,11 +63,11 @@ void AMNRBaseCharacter::Die()
 
 		AbilitySystemComponent->AddLooseGameplayTag(DeadTag);
 	}
-
-	/*if (DeathMontage)
+	
+	if (DeathMontage)
 	{
 		PlayAnimMontage(DeathMontage);
-	}*/
+	}
 	else
 	{
 		FinishDying();

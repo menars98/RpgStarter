@@ -28,7 +28,7 @@ protected:
 	UStaticMeshComponent* MeshComponent;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Item")
-	TSubclassOf<UMNRItems> Item;
+	TSubclassOf<UMNRItems> ItemClass;
 
 
 public:

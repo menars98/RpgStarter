@@ -22,8 +22,11 @@
 #include "Player/MNRPlayerController.h"
 #include "Player/MNRPlayerState.h"
 #include "UI/MNRFloatingStatusBarWidget.h"
+#include <MNRGameInstance.h>
+#include "SaveLoad/MNRSaveGame.h"
+#include "Inventory/MNREquipmentItem.h"
 
-// Sets default values
+
 AMNRHeroCharacter::AMNRHeroCharacter(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 
@@ -58,13 +61,20 @@ AMNRHeroCharacter::AMNRHeroCharacter(const class FObjectInitializer& ObjectIniti
 	}
 
 	InventoryComponent = CreateDefaultSubobject<UMNRInventoryComponent>("Inventory");
-	InventoryComponent->Capaticy = 20;
+	InventoryComponent->Capacity = 20;
 	InventoryComponent->SetIsReplicated(true);
 
 	InteractionComp = CreateDefaultSubobject<UMNRInteractionComponent>("InteractionComp");
+
+	HelmetMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HelmetMesh"));
+	HelmetMesh->SetupAttachment(GetMesh()); 
+	HelmetMesh->SetMasterPoseComponent(GetMesh()); 
+
+	ChestMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ChestMesh"));
+	ChestMesh->SetupAttachment(GetMesh());
+	ChestMesh->SetMasterPoseComponent(GetMesh()); 
 }
 
-// Called when the game starts or when spawned
 void AMNRHeroCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -73,6 +83,7 @@ void AMNRHeroCharacter::BeginPlay()
 	// On respawn, they are set up in PossessedBy.
 	// When the player a client, the floating status bars are all set up in OnRep_PlayerState.
 	InitializeFloatingStatusBar();
+	InitializeEquipmentSlotMap();
 
 	StartingCameraBoomArmLength = CameraBoom->TargetArmLength;
 	StartingCameraBoomLocation = CameraBoom->GetRelativeLocation();
@@ -115,35 +126,61 @@ void AMNRHeroCharacter::PossessedBy(AController* NewController)
 		// AI won't have PlayerControllers so we can init again here just to be sure. No harm in initing twice for heroes that have PlayerControllers.
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
 
-		// Set the AttributeSetBase for convenience attribute functions
-		AttributeSetBase = TWeakObjectPtr<UMNRAttributeSetBase>(PS->GetAttributeSetBase());
-
-		// If we handle players disconnecting and rejoining in the future, we'll have to change this so that possession from rejoining doesn't reset attributes.
-		// For now assume possession = spawn/respawn.
-		InitializeAttributes();
-
-		// Respawn specific things that won't affect first possession.
-
-		// Forcibly set the DeadTag count to 0
-		AbilitySystemComponent->SetTagMapCount(DeadTag, 0);
-
-		// Set Health/Mana/Stamina to their max. This is only necessary for *Respawn*.
-		SetHealth(GetMaxHealth());
-		SetMana(GetMaxMana());
-		SetStamina(GetMaxStamina());
-
-		// End respawn specific things
-		AddStartupEffects();
-
-		AddCharacterAbilities();
-
-		AMNRPlayerController* PC = Cast<AMNRPlayerController>(GetController());
-		if (PC)
+		if (HasAuthority())
 		{
-			PC->CreateHUD();
-		}
+			UMNRGameInstance* GameInstance = Cast<UMNRGameInstance>(GetGameInstance());
 
-		InitializeFloatingStatusBar();
+			if (GameInstance && GameInstance->PlayerSaveData)
+			{
+				// LOADING STATUS: Load the entire status with a single function.
+				LoadFromSaveData(GameInstance->PlayerSaveData);
+				GameInstance->PlayerSaveData = nullptr;
+			}
+			else
+			{
+				// NEW GAME STATUS: Give starting items.
+				if (InventoryComponent)
+				{
+					for (const FStartingItem& StartupItem : DefaultItems)
+					{
+						if (StartupItem.ItemClass)
+						{
+							InventoryComponent->TryAddItem(StartupItem.ItemClass, StartupItem.StackCount);
+						}
+					}
+				}
+			}
+
+			// Set the AttributeSetBase for convenience attribute functions
+			AttributeSetBase = TWeakObjectPtr<UMNRAttributeSetBase>(PS->GetAttributeSetBase());
+
+			// If we handle players disconnecting and rejoining in the future, we'll have to change this so that possession from rejoining doesn't reset attributes.
+			// For now assume possession = spawn/respawn.
+			InitializeAttributes();
+
+			// Respawn specific things that won't affect first possession.
+
+			// Forcibly set the DeadTag count to 0
+			AbilitySystemComponent->SetTagMapCount(DeadTag, 0);
+
+			// Set Health/Mana/Stamina to their max. This is only necessary for *Respawn*.
+			SetHealth(GetMaxHealth());
+			SetMana(GetMaxMana());
+			SetStamina(GetMaxStamina());
+
+			// End respawn specific things
+			AddStartupEffects();
+
+			AddCharacterAbilities();
+
+			AMNRPlayerController* PC = Cast<AMNRPlayerController>(GetController());
+			if (PC)
+			{
+				PC->CreateHUD();
+			}
+
+			InitializeFloatingStatusBar();
+		}
 	}
 }
 // Called to bind functionality to input
@@ -240,6 +277,25 @@ UMNRInventoryComponent* AMNRHeroCharacter::GetInventoryComponent() const
 	return InventoryComponent;
 }
 
+void AMNRHeroCharacter::InitializeEquipmentSlotMap()
+{
+	// Haritanýn zaten dolu olmadýðýný kontrol et.
+	if (EquipmentSlotToMeshComponentMap.Num() > 0)
+	{
+		return;
+	}
+
+	// Her bir slot etiketi için, ilgili mesh component'i haritaya ekle.
+	// FMNRGameplayTags::Get() senin etiketlerini merkezi olarak tutan singleton'ýn olduðunu varsayar.
+	// Eðer böyle bir yapýn yoksa, FGameplayTag::RequestGameplayTag(FName("...")) kullanabilirsin.
+	const FMNRGameplayTags GameplayTags = FMNRGameplayTags::Get();
+
+	EquipmentSlotToMeshComponentMap.Add(GameplayTags.Equipment_Slot_Head, HelmetMesh);
+	EquipmentSlotToMeshComponentMap.Add(FGameplayTag::RequestGameplayTag(FName("Equipment.Slot.Chest")), ChestMesh);
+	//EquipmentSlotToMeshComponentMap.Add(FGameplayTag::RequestGameplayTag(FName("Equipment.Slot.Legs")), LegsMesh);
+	//EquipmentSlotToMeshComponentMap.Add(FGameplayTag::RequestGameplayTag(FName("Equipment.Slot.Feet")), FeetMesh);
+}
+
 void AMNRHeroCharacter::InitializeFloatingStatusBar()
 {
 	// Only create once
@@ -289,8 +345,6 @@ void AMNRHeroCharacter::GrantItemAbilities(const UMNRItems* ItemData)
 
 void AMNRHeroCharacter::RemoveItemAbilities()
 {
-
-
 	//Remove from ASC
 	for (const FGameplayAbilitySpecHandle& Handle : EquippedItemAbilityHandles)
 	{
@@ -301,21 +355,81 @@ void AMNRHeroCharacter::RemoveItemAbilities()
 	EquippedItemAbilityHandles.Empty();
 }
 
+void AMNRHeroCharacter::EquipItem(UMNREquipmentItem* ItemToEquip)
+{
+	if (!AbilitySystemComponent.IsValid() || !ItemToEquip) return;
+
+	// 1. First, remove the current item from this slot.
+	UnequipItemFromSlot(ItemToEquip->EquipmentSlotTag);
+
+	// 2. Apply the GameplayEffect for the new equipment.
+	FGameplayEffectContextHandle ContextHandle = AbilitySystemComponent->MakeEffectContext();
+	ContextHandle.AddSourceObject(ItemToEquip);
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(ItemToEquip->EquipmentEffect, 1.0f, ContextHandle);
+	if (SpecHandle.IsValid())
+	{
+		FActiveGameplayEffectHandle EffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+		// Save the handle in a Map so you can remove this effect later.
+		EquippedEffectHandles.Add(ItemToEquip->EquipmentSlotTag, EffectHandle);
+	}
+
+
+	if (TObjectPtr<USkeletalMeshComponent>* TargetMeshComponentPtr = EquipmentSlotToMeshComponentMap.Find(ItemToEquip->EquipmentSlotTag))
+	{
+		// 2. Replace the found component's mesh with the item's mesh.
+		if (USkeletalMeshComponent* TargetMeshComponent = *TargetMeshComponentPtr)
+		{
+			TargetMeshComponent->SetSkeletalMesh(ItemToEquip->EquipmentMesh);
+		}
+	}
+}
+
+void AMNRHeroCharacter::UnequipItemFromSlot(const FGameplayTag& SlotTag)
+{
+	if (!AbilitySystemComponent.IsValid() || !SlotTag.IsValid()) return;
+
+	// Is there a registered effect for this slot?
+	if (EquippedEffectHandles.Contains(SlotTag))
+	{
+		//Remove the effect.This will restore the stat bonuses and the tag.
+		AbilitySystemComponent->RemoveActiveGameplayEffect(EquippedEffectHandles[SlotTag]);
+		EquippedEffectHandles.Remove(SlotTag);
+
+		if (TObjectPtr<USkeletalMeshComponent>* TargetMeshComponentPtr = EquipmentSlotToMeshComponentMap.Find(SlotTag))
+		{
+			// 2. Clear the mesh of the found component.
+			if (USkeletalMeshComponent* TargetMeshComponent = *TargetMeshComponentPtr)
+			{
+				TargetMeshComponent->SetSkeletalMesh(nullptr);
+			}
+		}
+	}
+}
+
 void AMNRHeroCharacter::UseItem(UMNRItems* Item)
 {
-		MulticastUseItem(Item);
+	if (Item)
+	{
+		// Call ServerUseItem, which triggers Multicast.
+		// This ensures the action always starts from the Server.
+		ServerUseItem(Item);
+	}
 }
 
 void AMNRHeroCharacter::ServerUseItem_Implementation(UMNRItems* Item)
 {
-	Item->Use(Item->GetOwningActor());
-	Item->OnUse(this);
+	// The server determines that the action is valid and notifies all clients.
+	MulticastUseItem(Item);
 }
 
 void AMNRHeroCharacter::MulticastUseItem_Implementation(UMNRItems* Item)
 {
-	Item->Use(Item->GetOwningActor());
-	Item->OnUse(this);
+	if (Item)
+    {
+        Item->Use(this); 
+		Item->OnUse(this);
+    };
 }
 
 void AMNRHeroCharacter::OnRep_PlayerState()
@@ -330,9 +444,6 @@ void AMNRHeroCharacter::OnRep_PlayerState()
 
 		// Init ASC Actor Info for clients. Server will init its ASC when it possesses a new Actor.
 		AbilitySystemComponent->InitAbilityActorInfo(PS, this);
-
-		// Bind player input to the AbilitySystemComponent. Also called in SetupPlayerInputComponent because of a potential race condition.
-		//@TODO Later If we Want GAS We need to like this : BindASCInput();
 
 		// Set the AttributeSetBase for convenience attribute functions
 		AttributeSetBase = TWeakObjectPtr<UMNRAttributeSetBase>(PS->GetAttributeSetBase());
@@ -449,5 +560,74 @@ void AMNRHeroCharacter::ASCInputReleased(EMNRAbilityInputID InputID)
 	if (AbilitySystemComponent.IsValid())
 	{
 		AbilitySystemComponent->AbilityLocalInputReleased(static_cast<int32>(InputID));
+	}
+}
+
+UMNRSaveGame* AMNRHeroCharacter::GenerateSaveData() const
+{
+	// 1. Create a new SaveGame object.
+	UMNRSaveGame* SaveData = NewObject<UMNRSaveGame>();
+
+	// 2. Save Inventory
+	if (InventoryComponent)
+	{
+		for (const UMNRItems* Item : InventoryComponent->GetItems())
+		{
+			if (Item)
+			{
+				FInventorySlotData SlotData;
+				SlotData.ItemClass = Item->GetClass();
+				SlotData.StackCount = Item->StackCount;
+				SaveData->SavedInventoryItems.Add(SlotData);
+			}
+		}
+	}
+	// 3. Save Equipped Items
+	// This assumes your character has functions like GetEquippedWeapon() and GetEquippedHelmet().
+	/*if (GetEquippedWeapon())
+	{
+		SaveData->SavedEquippedItems.Add(EEquipmentSlot::Weapon, GetEquippedWeapon()->GetClass());
+	}
+	if (GetEquippedHelmet())
+	{
+		SaveData->SavedEquippedItems.Add(EEquipmentSlot::Helmet, GetEquippedHelmet()->GetClass());
+	}*/
+	// ... diðer slotlar ...
+
+	// 4. Save the Health Value
+	if (AttributeSetBase.IsValid())
+	{
+		SaveData->SavedHealth = AttributeSetBase->GetHealth();
+	}
+
+	return SaveData;
+}
+
+void AMNRHeroCharacter::LoadFromSaveData(const UMNRSaveGame* SaveData)
+{
+	if (!SaveData || !InventoryComponent) return;
+
+
+	for (const FInventorySlotData& SlotData : SaveData->SavedInventoryItems)
+	{
+		InventoryComponent->TryAddItem(SlotData.ItemClass, SlotData.StackCount);
+	}
+
+	// Note: This should be done AFTER the inventory is loaded!
+	for (const TPair<EEquipmentSlot, TSubclassOf<UMNRItems>>& EquippedItemPair : SaveData->SavedEquippedItems)
+	{
+		UMNRItems* ItemToEquip = InventoryComponent->FindItemByClass(EquippedItemPair.Value);
+		if (ItemToEquip)
+		{
+			UseItem(ItemToEquip); 
+		}
+	}
+
+	// 3. Load Health Points (It is best to do this with Gameplay Effect)
+	if (AttributeSetBase.IsValid() && SaveData->SavedHealth > 0)
+	{
+		// This is the simplest method, but it can cause replication issues.
+		 AttributeSetBase->SetHealth(SaveData->SavedHealth); 
+		 // The best method is to implement a GE that sets the value to this.
 	}
 }
