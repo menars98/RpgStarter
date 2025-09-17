@@ -328,14 +328,22 @@ void AMNRHeroCharacter::GrantItemAbilities(const UMNRItems* ItemData)
 	// Önce varsa eski item'ýn yeteneklerini temizle.
 	RemoveItemAbilities();
 
-
-	for (const TSubclassOf<UGameplayAbility>& AbilityClass : ItemData->GrantedAbilities)
+	if (!HasAuthority() || !AbilitySystemComponent.IsValid() || !ItemData)
 	{
-		if (AbilityClass)
+		return;
+	}
+
+	for (const FAbilityToGrant& AbilityToGrant : ItemData->GrantedAbilities)
+	{
+		if (AbilityToGrant.Ability)
 		{
 			// For now, let's assume we've assigned all item abilities to Action1.
 			// In a more advanced system, ItemData might also contain information about which ability goes to which InputID.
-			FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(AbilityClass, 1, static_cast<int32>(EMNRAbilityInputID::Action1), this);
+			FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(
+				AbilityToGrant.Ability, // The class of ability
+				1, // Ability level
+				static_cast<int32>(AbilityToGrant.InputID), // InputID from the item data
+				this); // The source object, usually 'this' character
 
 			FGameplayAbilitySpecHandle GrantedHandle = AbilitySystemComponent->GiveAbility(AbilitySpec);
 			EquippedItemAbilityHandles.Add(GrantedHandle);

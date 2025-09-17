@@ -6,9 +6,9 @@
 #include "Inventory/MNRItems.h"
 #include "MNREquipmentItem.generated.h"
 
-/**
- * 
- */
+
+
+
 UCLASS()
 class HUDBASIC_API UMNREquipmentItem : public UMNRItems
 {
@@ -20,7 +20,6 @@ public:
     // This effect grants stat bonuses and tags.
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
     TSubclassOf<UGameplayEffect> EquipmentEffect;
-
     // The slot represented by this equipment (Head, Chest, etc.).
     // This is used to check whether something is already equipped in this slot.
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")

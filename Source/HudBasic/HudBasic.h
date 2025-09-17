@@ -8,11 +8,12 @@ UENUM(BlueprintType)
 enum class EMNRAbilityInputID : uint8
 {
     None,
-    Confirm,    // Onayla (örn: menüde)
-    Cancel,     // Ýptal
-    Primary,    // Birincil Saldýrý (örn: Sol Týk)
-    Secondary,  // Ýkincil Saldýrý (örn: Sað Týk)
-    Action1     // F tuþu gibi özel bir eylem
+    Confirm,    
+    Cancel,     
+    Primary,    // Primary Attack (e.g., Left Click)
+    Secondary,  // Secondary Attack (e.g., Right-Click)
+    Action1,    // A special action
+    Teleport
 };
 
 UENUM(BlueprintType)
@@ -22,5 +23,5 @@ enum class EEquipmentSlot : uint8
     Helmet      UMETA(DisplayName = "Helmet"),
     Chest       UMETA(DisplayName = "Chest"),
     Weapon      UMETA(DisplayName = "Weapon")
-    // Ýleride eklenecek diðer slotlar (Boots, Gloves vb.)
+    // Other slots to be added later (Boots, Gloves, etc.)
 };

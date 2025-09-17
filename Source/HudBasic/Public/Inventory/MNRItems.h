@@ -5,16 +5,27 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 #include "Abilities/GameplayAbility.h"
+#include <HudBasic/HudBasic.h>
 #include "MNRItems.generated.h"
 
 
 class AMNRItemActor;
 class AMNRHeroCharacter;
 
+USTRUCT(BlueprintType)
+struct FAbilityToGrant
+{
+	GENERATED_BODY()
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<UGameplayAbility> Ability;
 
-/**
- * 
- */
+	// The input to which this skill will be connected (if any).
+	// Otherwise, it is left as ‘None’.
+	UPROPERTY(EditDefaultsOnly)
+	EMNRAbilityInputID InputID = EMNRAbilityInputID::None;
+};
+
+
 UCLASS(BlueprintType, Blueprintable, EditInlineNew, DefaultToInstanced)
 class HUDBASIC_API UMNRItems : public UObject
 {
@@ -27,8 +38,12 @@ public:
 	UPROPERTY(ReplicatedUsing = "OnRep_ItemUsed", EditDefaultsOnly, BlueprintReadWrite, Category = "Items")
 	TSubclassOf<UMNRItems> ItemClass;
 
+	//Right now we use both of them. @TODO: remove Grantedabilities and change code to use only GrantedItemAbilities
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
-	TArray<TSubclassOf<UGameplayAbility>> GrantedAbilities;
+	TArray<FAbilityToGrant> GrantedAbilities;
+
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Abilities")
+	//TArray<TSubclassOf<UGameplayAbility>> GrantedAbilities;
 
 	UPROPERTY(Transient)
 	class UWorld* World;
