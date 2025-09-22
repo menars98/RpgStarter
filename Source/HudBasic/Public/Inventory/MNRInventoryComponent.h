@@ -30,6 +30,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void TryRemoveItem(TSubclassOf<UMNRItems> ItemClass, int32 StackCount = 1);
 
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void TryRemoveItemInstance(UMNRItems* ItemInstance);
+
+protected:
+
+	bool RemoveItemInstance_Internal(UMNRItems* ItemInstance);
+
 	// This is the actual insertion logic that runs ONLY ON THE SERVER.
 	bool AddItem_Internal(TSubclassOf<UMNRItems> ItemClass, int32 StackCount);
 
@@ -41,6 +48,11 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void Server_TryRemoveItem(TSubclassOf<UMNRItems> ItemClass, int32 StackCount);
+
+	UFUNCTION(Server, Reliable)
+	void Server_TryRemoveItemInstance(UMNRItems* ItemInstance);
+
+public:
 
 	// Clients call this function when the Items array is updated.
 	// This is the best place to update the UI.

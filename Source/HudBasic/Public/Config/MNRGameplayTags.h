@@ -25,6 +25,8 @@ public:
 	FGameplayTag InputTag_PrimaryInteract;
 	FGameplayTag InputTag_Action1;
 	FGameplayTag Equipment_Slot_Head;
+	FGameplayTag Equipment_Slot_Right_Weapon;
+	FGameplayTag Equipment_Slot_Left_Weapon;
 
 protected:
 

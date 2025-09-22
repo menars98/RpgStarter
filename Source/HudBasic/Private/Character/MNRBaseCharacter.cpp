@@ -89,18 +89,26 @@ void AMNRBaseCharacter::BeginPlay()
 
 void AMNRBaseCharacter::AddCharacterAbilities()
 {
-	if (GetLocalRole() != ROLE_Authority || !AbilitySystemComponent.IsValid() || AbilitySystemComponent->bCharacterAbilitiesGiven)
+	if (!HasAuthority() || !AbilitySystemComponent.IsValid())
 	{
 		return;
 	}
-	//@TODO Add GAS
-	//For GameplayAbility
 
-	for (TSubclassOf<UMNRBaseGameplayAbility>& StartupAbility : CharacterAbilities)
+	// Yeni struct array'i üzerinde döngü yap.
+	for (const FStartingAbility& StartupAbility : CharacterAbilities)
 	{
-		// Create FGameplayAbilitySpec and assign InputID.
-		AbilitySystemComponent->GiveAbility(
-			FGameplayAbilitySpec(StartupAbility, 1, static_cast<int32>(EMNRAbilityInputID::Primary), this));
+		if (StartupAbility.Ability)
+		{
+			// FGameplayAbilitySpec'i, struct'tan gelen tüm bilgilerle oluþtur.
+			FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(
+				StartupAbility.Ability,
+				StartupAbility.Level,
+				static_cast<int32>(StartupAbility.InputID), // KRÝTÝK ADIM!
+				this
+			);
+
+			AbilitySystemComponent->GiveAbility(AbilitySpec);
+		}
 	}
 
 	AbilitySystemComponent->bCharacterAbilitiesGiven = true;

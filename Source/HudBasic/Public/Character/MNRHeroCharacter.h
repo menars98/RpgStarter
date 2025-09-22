@@ -6,7 +6,9 @@
 #include "MNRBaseCharacter.h"
 #include "GameplayAbilitySpecHandle.h"
 #include <ActiveGameplayEffectHandle.h>
+#include <Abilities/GameplayAbility.h>
 #include "MNRHeroCharacter.generated.h"
+
 
 
 
@@ -67,6 +69,9 @@ public:
 	void LoadFromSaveData(const UMNRSaveGame* SaveData);
 
 	// ---Save/Load END--- //
+
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	void UpgradeAbility(TSubclassOf<UGameplayAbility> AbilityClass);
 protected:
 
 	TMap<FGameplayTag, TObjectPtr<USkeletalMeshComponent>> EquipmentSlotToMeshComponentMap;
@@ -76,6 +81,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Equipment")
 	TObjectPtr<USkeletalMeshComponent> ChestMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components | Equipment")
+	TObjectPtr<USkeletalMeshComponent> RighWeaponMesh;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "GASDocumentation|Camera")
 	float BaseTurnRate = 45.0f;

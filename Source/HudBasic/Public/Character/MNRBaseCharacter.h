@@ -7,7 +7,26 @@
 #include "AbilitySystemInterface.h"
 #include "HudBasic/HudBasic.h"
 #include "GameplayTagContainer.h"
+#include <Abilities/GameplayAbility.h>
 #include "MNRBaseCharacter.generated.h"
+
+
+USTRUCT(BlueprintType)
+struct FStartingAbility
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
+	TSubclassOf<UGameplayAbility> Ability;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
+	int32 Level = 1;
+
+	// Bu yeteneðin hangi girdiyle tetikleneceði.
+	UPROPERTY(EditDefaultsOnly, Category = "Abilities")
+	EMNRAbilityInputID InputID = EMNRAbilityInputID::None;
+};
+
 
 class UMNRInteractionComponent;
 class UMNRAbilitySystemComponent;
@@ -63,7 +82,7 @@ protected:
 	//@TODO later We can Add GameplayAbilities for Character
 	// Default abilities for this Character. These will be removed on Character death and regiven if Character respawns.
 	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "GASDocumentation|Abilities")
-	TArray<TSubclassOf<class UMNRBaseGameplayAbility>> CharacterAbilities;
+	TArray<FStartingAbility> CharacterAbilities;
 
 	// Default attributes for a character for initializing on spawn/respawn.
 	// This is an instant GE that overrides the values for attributes that get reset on spawn/respawn.

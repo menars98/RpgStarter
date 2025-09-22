@@ -7,8 +7,8 @@
 #include "MNREquipmentItem.generated.h"
 
 
-
-
+class UStaticMesh;
+class USkeletalMesh;
 UCLASS()
 class HUDBASIC_API UMNREquipmentItem : public UMNRItems
 {
@@ -26,6 +26,7 @@ public:
     FGameplayTag EquipmentSlotTag;
     UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Equipment")
     TObjectPtr<USkeletalMesh> EquipmentMesh;
+
 
     virtual void Use(AActor* Instigator) override;
 

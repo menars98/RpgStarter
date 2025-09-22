@@ -48,6 +48,20 @@ void UMNRInventoryComponent::TryRemoveItem(TSubclassOf<UMNRItems> ItemClass, int
 	}
 }
 
+void UMNRInventoryComponent::TryRemoveItemInstance(UMNRItems* ItemInstance)
+{
+	if (!ItemInstance) return;
+
+	if (GetOwner()->HasAuthority())
+	{
+		RemoveItemInstance_Internal(ItemInstance);
+	}
+	else
+	{
+		Server_TryRemoveItemInstance(ItemInstance);
+	}
+}
+
 
 void UMNRInventoryComponent::Server_TryAddItem_Implementation(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
 {
@@ -57,6 +71,37 @@ void UMNRInventoryComponent::Server_TryAddItem_Implementation(TSubclassOf<UMNRIt
 void UMNRInventoryComponent::Server_TryRemoveItem_Implementation(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
 {
 	RemoveItem_Internal(ItemClass, StackCount);
+}
+
+void UMNRInventoryComponent::Server_TryRemoveItemInstance_Implementation(UMNRItems* ItemInstance)
+{
+	RemoveItemInstance_Internal(ItemInstance);
+}
+
+// Real remove logic. Only works on the server.
+bool UMNRInventoryComponent::RemoveItemInstance_Internal(UMNRItems* ItemInstance)
+{
+	if (!ItemInstance) return false;
+
+	// Check if the items array contains this specific instance.
+	if (Items.Contains(ItemInstance))
+	{
+		if (ItemInstance->StackCount > 1)
+		{
+			ItemInstance->StackCount--;
+		}
+		else
+		{
+			Items.Remove(ItemInstance);
+			ItemInstance->MarkAsGarbage(); // Mark for the garbage collector to clean up.
+		}
+
+		// Notify clients of the change.
+		OnRep_Items();
+		return true;
+	}
+
+	return false;
 }
 
 bool UMNRInventoryComponent::AddItem_Internal(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
@@ -116,7 +161,6 @@ bool UMNRInventoryComponent::AddItem_Internal(TSubclassOf<UMNRItems> ItemClass, 
 
 	return false;
 }
-
 
 bool UMNRInventoryComponent::RemoveItem_Internal(TSubclassOf<UMNRItems> ItemClass, int32 StackCount)
 {

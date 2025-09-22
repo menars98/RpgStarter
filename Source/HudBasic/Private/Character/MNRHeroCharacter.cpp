@@ -68,11 +68,15 @@ AMNRHeroCharacter::AMNRHeroCharacter(const class FObjectInitializer& ObjectIniti
 
 	HelmetMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("HelmetMesh"));
 	HelmetMesh->SetupAttachment(GetMesh()); 
-	HelmetMesh->SetMasterPoseComponent(GetMesh()); 
+	HelmetMesh->SetLeaderPoseComponent(GetMesh()); 
 
 	ChestMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("ChestMesh"));
 	ChestMesh->SetupAttachment(GetMesh());
 	ChestMesh->SetMasterPoseComponent(GetMesh()); 
+
+	RighWeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("RighWeaponMesh"));
+	RighWeaponMesh->SetupAttachment(GetMesh(), FName("RightHandSocket"));
+	RighWeaponMesh->SetLeaderPoseComponent(GetMesh());
 }
 
 void AMNRHeroCharacter::BeginPlay()
@@ -279,19 +283,18 @@ UMNRInventoryComponent* AMNRHeroCharacter::GetInventoryComponent() const
 
 void AMNRHeroCharacter::InitializeEquipmentSlotMap()
 {
-	// Haritanýn zaten dolu olmadýðýný kontrol et.
 	if (EquipmentSlotToMeshComponentMap.Num() > 0)
 	{
 		return;
 	}
 
-	// Her bir slot etiketi için, ilgili mesh component'i haritaya ekle.
-	// FMNRGameplayTags::Get() senin etiketlerini merkezi olarak tutan singleton'ýn olduðunu varsayar.
-	// Eðer böyle bir yapýn yoksa, FGameplayTag::RequestGameplayTag(FName("...")) kullanabilirsin.
 	const FMNRGameplayTags GameplayTags = FMNRGameplayTags::Get();
 
 	EquipmentSlotToMeshComponentMap.Add(GameplayTags.Equipment_Slot_Head, HelmetMesh);
 	EquipmentSlotToMeshComponentMap.Add(FGameplayTag::RequestGameplayTag(FName("Equipment.Slot.Chest")), ChestMesh);
+	EquipmentSlotToMeshComponentMap.Add(GameplayTags.Equipment_Slot_Right_Weapon, RighWeaponMesh);
+	//EquipmentSlotToMeshComponentMap.Add(FGameplayTag::RequestGameplayTag(FName("Equipment.Slot.LeftWeapon")), LeftWeaponMesh);
+	//EquipmentSlotToMeshComponentMap.Add(FGameplayTag::RequestGameplayTag(FName("Equipment.Slot.Hands")), HandsMesh);
 	//EquipmentSlotToMeshComponentMap.Add(FGameplayTag::RequestGameplayTag(FName("Equipment.Slot.Legs")), LegsMesh);
 	//EquipmentSlotToMeshComponentMap.Add(FGameplayTag::RequestGameplayTag(FName("Equipment.Slot.Feet")), FeetMesh);
 }
@@ -325,7 +328,7 @@ void AMNRHeroCharacter::InitializeFloatingStatusBar()
 
 void AMNRHeroCharacter::GrantItemAbilities(const UMNRItems* ItemData)
 {
-	// Önce varsa eski item'ýn yeteneklerini temizle.
+	
 	RemoveItemAbilities();
 
 	if (!HasAuthority() || !AbilitySystemComponent.IsValid() || !ItemData)
@@ -637,5 +640,46 @@ void AMNRHeroCharacter::LoadFromSaveData(const UMNRSaveGame* SaveData)
 		// This is the simplest method, but it can cause replication issues.
 		 AttributeSetBase->SetHealth(SaveData->SavedHealth); 
 		 // The best method is to implement a GE that sets the value to this.
+	}
+}
+
+void AMNRHeroCharacter::UpgradeAbility(TSubclassOf<UGameplayAbility> AbilityClass)
+{
+	if (!HasAuthority() || !AbilitySystemComponent.IsValid() || !AbilityClass )
+	{
+		return;
+	}
+
+	// 1. Find and Remove Existing Ability
+	// Loop through ASC's existing ability specs.
+	// We are copying the TArray because we will be deleting elements during the loop.
+	TArray<FGameplayAbilitySpec> Specs = AbilitySystemComponent->GetActivatableAbilities();
+	for (const FGameplayAbilitySpec& Spec : Specs)
+	{
+		if (Spec.Ability->GetClass() == AbilityClass)
+		{
+			const int32 CurrentLevel = Spec.Level;
+			const int32 NewLevel = CurrentLevel + 1;
+
+			// @TODO: Maximum level control
+			// int32 MaxLevel = GetMaxLevelForAbility(AbilityClass); // A value read from the data table
+			// if (NewLevel > MaxLevel) { return; }
+
+			AbilitySystemComponent->ClearAbility(Spec.Handle);
+
+			FGameplayAbilitySpec NewSpec = FGameplayAbilitySpec(
+				AbilityClass,
+				NewLevel, 
+				static_cast<int32>(Spec.InputID),
+				this
+			);
+			AbilitySystemComponent->GiveAbility(NewSpec);
+
+			UE_LOG(LogTemp, Warning, TEXT("Upgraded ability %s from level %d to %d"),
+				*AbilityClass->GetName(), CurrentLevel, NewLevel);
+
+			break;
+			
+		}
 	}
 }
